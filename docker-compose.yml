@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hireflow_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hireflow
+      POSTGRES_PASSWORD: hireflow_secret
+      POSTGRES_DB: hireflow
+    ports:
+      - "5435:5432"
+    volumes:
+      - hireflow_pgdata:/var/lib/postgresql/data
+
+volumes:
+  hireflow_pgdata:

@@ -1,0 +1,16 @@
+{
+  "name": "hireflow",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/types"
+  ],
+  "scripts": {
+    "dev:web":    "npm -w apps/web run dev",
+    "dev:api":    "npm -w apps/api run dev",
+    "dev:worker": "cd apps/workers && go run cmd/main.go",
+    "db:migrate": "npm -w apps/api run migrate",
+    "install:all": "npm install && cd apps/worker && go mod tidy"
+  }
+}
