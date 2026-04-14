@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import 'express-async-errors'
+import authRoutes from '../src/routes/auth.route';
 
 dotenv.config()
 
@@ -13,11 +14,8 @@ app.use(express.json())
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
-// routes go here later:
-// app.use('/api/auth',      authRoutes)
-// app.use('/api/jobs',      jobRoutes)
-// app.use('/api/apply',     applyRoutes)
-// app.use('/api/reviewers', reviewerRoutes)
+
+app.use('/api/auth',  authRoutes)
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err)
