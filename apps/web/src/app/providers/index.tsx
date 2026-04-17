@@ -1,19 +1,56 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import { store, type RootState } from "@/redux/store";
 import { StyledEngineProvider } from "@mui/material/styles";
 import { theme } from "@/Theme";
+import { refreshAccessToken, fetchMe } from "@/redux/features/auth/authAPI";
+import { setAccessToken, setUser, setSessionRestored } from "@/redux/features/auth/authSlice";
 
 type Props = {
   children: ReactNode;
 };
 
+function AuthInitializer({ children }: Props) {
+  const dispatch = useDispatch();
+  const { isSessionRestored } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        // call /refresh
+        const { accessToken } = await refreshAccessToken();
+        dispatch(setAccessToken(accessToken));
+
+        // then /me
+        const { user } = await fetchMe();
+        dispatch(setUser(user));
+      } catch (error) {
+        console.error("Session restoration failed:", error);
+      } finally {
+        dispatch(setSessionRestored(true));
+      }
+    };
+
+    initAuth();
+  }, [dispatch]);
+
+  if (!isSessionRestored) {
+    return null; // or a loading spinner
+  }
+
+  return <>{children}</>;
+}
+
 export function AppProviders({ children }: Props) {
   return (
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
-    </StyledEngineProvider>
+    <Provider store={store}>
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <AuthInitializer>{children}</AuthInitializer>
+        </ThemeProvider>
+      </StyledEngineProvider>
+    </Provider>
   );
 }

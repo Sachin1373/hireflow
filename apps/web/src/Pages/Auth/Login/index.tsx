@@ -1,12 +1,12 @@
-import {
-  TextField,
-  Button,
-  Box,
-} from "@mui/material";
+import { TextField, Button, Box } from "@mui/material";
 import PasswordField from "@/Components/PasswordField";
 import { useForm, type SubmitHandler } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { loginUser, fetchMe } from "@/redux/features/auth/authAPI";
+import { setAccessToken, setUser } from "@/redux/features/auth/authSlice";
 import { toast } from "react-toastify";
-import api from "@/axiosInstance";
+
 
 export const ROLES = [
   { label: "HR", value: "HR" },
@@ -24,22 +24,20 @@ const Login = () => {
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<Inputs>({
-  });
-
-
+  } = useForm<Inputs>({});
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const onSubmit: SubmitHandler<Inputs> = async (payload) => {
     try {
-      const res = await api.post("auth/login", payload);
-      const accessToken = res.data.accessToken;
-      localStorage.setItem("accessToken", accessToken);
-      toast.success("Account created successfully");
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("Something went wrong");
-      }
+      const { accessToken } = await loginUser(payload);
+      dispatch(setAccessToken(accessToken));
+      const { user } = await fetchMe();
+      dispatch(setUser(user));
+
+      toast.success("Logged in successfully");
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message || "Something went wrong");
     }
   };
 

@@ -30,3 +30,7 @@
     @apply font-bold tracking-tight;
   }
 }
+
+:root {
+  --glass-background-unique-marketing-menu: 0 0% 93% / 72%;
+}

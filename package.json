@@ -12,11 +12,5 @@
     "dev:worker": "cd apps/workers && go run cmd/main.go",
     "db:migrate": "npm -w apps/api run migrate",
     "install:all": "npm install && cd apps/worker && go mod tidy"
-  },
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/material": "^9.0.0",
-    "react-router-dom": "^7.14.0"
   }
 }

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { CheckUserExists, CreateUser } from "../../repository/users/createUser";
+import { CheckUserExists, CreateUser, GetUserById } from "../../repository/users/createUser";
 import { GetUserByEmail } from "../../repository/users/createUser";
 import bcrypt from 'bcrypt'
 import jwt from "jsonwebtoken";
@@ -60,7 +60,6 @@ export const Login = async (req: Request, res: Response) => {
     }
 
     const user = await GetUserByEmail(email);
-    console.log('user :', user)
     if (!user) {
       return res.status(404).json({
         message: "User not found",
@@ -95,14 +94,15 @@ export const Login = async (req: Request, res: Response) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure: false,
+      sameSite: "lax",
     });
 
     return res.status(200).json({
       success: true,
       accessToken,
       user: {
+        name : user.first_name,
         email: user.email,
         role: user.role,
       },
@@ -151,8 +151,8 @@ export const RefreshToken = async (req: Request, res: Response) => {
 
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
-      secure: true, // true in production
-      sameSite: "strict",
+      secure: false, // true in production
+      sameSite: "lax",
     });
 
     return res.status(200).json({
@@ -165,6 +165,32 @@ export const RefreshToken = async (req: Request, res: Response) => {
 
     return res.status(403).json({
       message: "Invalid or expired refresh token",
+    });
+  }
+};
+
+export const GetMe = async (req: any, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const user = await GetUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        name: user.first_name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
     });
   }
 };
