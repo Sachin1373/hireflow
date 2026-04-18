@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { TextField, Button, Box } from "@mui/material";
 import PasswordField from "@/Components/PasswordField";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { type RootState } from "@/redux/store";
 import { loginUser, fetchMe } from "@/redux/features/auth/authAPI";
 import { setAccessToken, setUser } from "@/redux/features/auth/authSlice";
 import { toast } from "react-toastify";
@@ -19,6 +21,7 @@ type Inputs = {
 };
 
 const Login = () => {
+  const user = useSelector((state: RootState) => state.auth.user);
   const {
     register,
     handleSubmit,
@@ -27,6 +30,13 @@ const Login = () => {
   } = useForm<Inputs>({});
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   const onSubmit: SubmitHandler<Inputs> = async (payload) => {
     try {
       const { accessToken } = await loginUser(payload);

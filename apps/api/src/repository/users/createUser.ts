@@ -22,11 +22,11 @@ export const CreateUser = async (data: CreateUserInput) => {
 };
 
 export const CheckUserExists = async (email: string): Promise<boolean> => {
-  const res = await pool.query("SELECT email FROM users WHERE email = $1", [
+  const res = await pool.query("SELECT EXISTS (SELECT 1 FROM users WHERE email = $1) AS exists", [
     email,
   ]);
 
-  return res.rows.length > 0;
+  return res.rows[0].exists;
 };
 
 export const GetUserByEmail = async(email:string) => {

@@ -6,6 +6,8 @@ import { StyledEngineProvider } from "@mui/material/styles";
 import { theme } from "@/Theme";
 import { refreshAccessToken, fetchMe } from "@/redux/features/auth/authAPI";
 import { setAccessToken, setUser, setSessionRestored } from "@/redux/features/auth/authSlice";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 type Props = {
   children: ReactNode;
@@ -18,13 +20,12 @@ function AuthInitializer({ children }: Props) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // call /refresh
         const { accessToken } = await refreshAccessToken();
         dispatch(setAccessToken(accessToken));
 
-        // then /me
         const { user } = await fetchMe();
         dispatch(setUser(user));
+
       } catch (error) {
         console.error("Session restoration failed:", error);
       } finally {
@@ -49,6 +50,18 @@ export function AppProviders({ children }: Props) {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthInitializer>{children}</AuthInitializer>
+          <ToastContainer
+            position="bottom-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
         </ThemeProvider>
       </StyledEngineProvider>
     </Provider>

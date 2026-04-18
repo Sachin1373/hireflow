@@ -1,6 +1,8 @@
 import { Drawer, Box, Typography, TextField, Button, IconButton, Stack } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useForm } from "react-hook-form";
+import api from "@/axiosInstance";
+import { toast } from "react-toastify";
 
 type Props = {
   open: boolean;
@@ -16,10 +18,21 @@ type FormInputs = {
 export default function AddReviewerDrawer({ open, onClose }: Props) {
   const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
 
-  const onSubmit = (data: FormInputs) => {
-    console.log("Adding reviewer:", data);
-    // Backend call will go here
+  const onSubmit = async(data: FormInputs) => {
+    try {
+     
+    await api.post('/reviewer/create', data)
+    toast.success("Reviewer added successfully");
     onClose();
+    } catch (error: any) {
+      console.error(error);
+
+    toast.error(
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to add reviewer"
+    );
+    }
   };
 
   return (
