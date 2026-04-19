@@ -6,9 +6,9 @@ import {
   Stack,
   Avatar,
   Chip,
-  IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import SearchBar from "@/Components/SearchBar";
@@ -16,9 +16,12 @@ import AddReviewerDrawer from "./AddReviewerDrawer";
 import BulkUploadModal from "./BulkUploadModal";
 import CustomTable from "@/Components/CustomTable";
 import ConfirmDialog from "@/Components/ConfirmDialog";
+import ActionMenu from "@/Components/ActionMenu";
 import api from "@/axiosInstance";
 import { toast } from "react-toastify";
 import type { Reviewer } from "../../../../../packages/types/src/index";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 
 type ReviewerResponse = {
   data: Reviewer[];
@@ -31,7 +34,9 @@ type ReviewerResponse = {
 };
 
 export default function ReviewersPage() {
+  const currentUser = useSelector((state: RootState) => state.auth.user);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedReviewer, setSelectedReviewer] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -43,6 +48,10 @@ export default function ReviewersPage() {
   // 🔹 Deletion state
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const canWrite =
+    currentUser?.role === "ADMIN" ||
+    (currentUser?.role === "HR" && currentUser.permissions?.write);
 
   const limit = 10;
 
@@ -169,21 +178,28 @@ export default function ReviewersPage() {
       field: "actions",
       headerName: "",
       align: "right" as const,
-      render: (row: any) => (
-        <IconButton
-          size="small"
-          color="error"
-          onClick={() => setDeleteId(row.id)}
-          sx={{
-            border: "1px solid",
-            borderColor: "grey.200",
-            borderRadius: "8px",
-            "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.04)" },
-          }}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
-      ),
+      render: (row: any) =>
+        canWrite ? (
+          <ActionMenu
+            actions={[
+              {
+                label: "Edit",
+                icon: <EditIcon fontSize="small" />,
+                onClick: () => {
+                  setSelectedReviewer(row);
+                  setDrawerOpen(true);
+                },
+              },
+              {
+                label: "Delete",
+                icon: <DeleteIcon fontSize="small" />,
+                onClick: () => setDeleteId(row.id),
+                color: "#d32f2f",
+                dividerBefore: true,
+              },
+            ]}
+          />
+        ) : null,
     },
   ];
 
@@ -200,33 +216,41 @@ export default function ReviewersPage() {
         </Box>
 
         <Stack direction="row" spacing={2}>
-          <Button
-            variant="outlined"
-            startIcon={<FileUploadIcon />}
-            onClick={() => setModalOpen(true)}
-            sx={{
-              textTransform: "none",
-              borderRadius: "10px",
-              fontWeight: 600,
-            }}
-          >
-            Bulk Upload
-          </Button>
+          {canWrite && (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<FileUploadIcon />}
+                onClick={() => setModalOpen(true)}
+                sx={{
+                  textTransform: "none",
+                  borderRadius: "10px",
+                  fontWeight: 600,
+                }}
+              >
+                Bulk Upload
+              </Button>
 
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setDrawerOpen(true)}
-            sx={{
-              textTransform: "none",
-              borderRadius: "10px",
-              fontWeight: 600,
-              boxShadow: "none",
-              "&:hover": { boxShadow: "none" },
-            }}
-          >
-            Add Reviewer
-          </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  setSelectedReviewer(null);
+                  setDrawerOpen(true);
+                }}
+                sx={{
+                  textTransform: "none",
+                  borderRadius: "10px",
+                  fontWeight: 600,
+                  boxShadow: "none",
+                  "&:hover": { boxShadow: "none" },
+                  bgcolor: "black",
+                }}
+              >
+                Add Reviewer
+              </Button>
+            </>
+          )}
         </Stack>
       </Box>
 
@@ -260,8 +284,10 @@ export default function ReviewersPage() {
 
       <AddReviewerDrawer
         open={drawerOpen}
+        initialData={selectedReviewer}
         onClose={() => {
           setDrawerOpen(false);
+          setSelectedReviewer(null);
           fetchReviewers();
         }}
       />

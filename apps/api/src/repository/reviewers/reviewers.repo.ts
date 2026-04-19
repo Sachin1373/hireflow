@@ -5,24 +5,24 @@ type CreateReviewerInput = {
   email: string;
   designation?: string;
   created_by: string;
+  org_id: string;
+  password?: string;
 };
-
 type GetReviewersInput = {
   page: number;
   limit: number;
   search?: string;
+  org_id: string;
 };
-
-
 export const CreateReviewerService = async(data: CreateReviewerInput) => {
-    const { name, email, designation, created_by } = data;
+    const { name, email, designation, created_by, org_id, password } = data;
     const res = await pool.query(
       `
-      INSERT INTO reviewers (name, email, designation, created_by)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
+      INSERT INTO users (first_name, email, designation, created_by, org_id, role, password_hash)
+      VALUES ($1, $2, $3, $4, $5, 'REVIEWER', $6)
+      RETURNING *, first_name as name;
       `,
-      [name, email, designation || null, created_by]
+      [name, email, designation || null, created_by, org_id, password || null]
     );
 
     return res.rows[0];
@@ -30,7 +30,7 @@ export const CreateReviewerService = async(data: CreateReviewerInput) => {
 
 
 export const checkReviewerAlreadyExists = async(email: string):Promise<boolean> => {
-    const res = await pool.query("SELECT EXISTS (SELECT 1 FROM reviewers WHERE email = $1) AS exists", [email])
+    const res = await pool.query("SELECT EXISTS (SELECT 1 FROM users WHERE email = $1) AS exists", [email])
 
     return res.rows[0].exists
 }
@@ -39,27 +39,27 @@ export const getReviewers = async ({
   page,
   limit,
   search,
+  org_id,
 }: GetReviewersInput) => {
  
   const offset = (page - 1) * limit;
   let baseQuery = `
-    FROM reviewers
-    WHERE 1=1
+    FROM users
+    WHERE org_id = $1 AND role = 'REVIEWER'
   `;
 
-  const values: any[] = [];
-  let index = 1;
+  const values: any[] = [org_id];
+  let index = 2;
 
   // 🔍 search filter
   if (search) {
     baseQuery += `
-      AND (name ILIKE $${index} OR email ILIKE $${index})
+      AND (first_name ILIKE $${index} OR email ILIKE $${index})
     `;
     values.push(`%${search}%`);
     index++;
   }
 
-  // 📊 total count
   const countRes = await pool.query(
     `SELECT COUNT(*) ${baseQuery}`,
     values
@@ -67,9 +67,8 @@ export const getReviewers = async ({
 
   const total = Number(countRes.rows[0].count);
 
-  // 📄 paginated data
   const dataQuery = `
-    SELECT *
+    SELECT id, first_name as name, email, designation, created_at
     ${baseQuery}
     ORDER BY created_at DESC
     LIMIT $${index} OFFSET $${index + 1}
@@ -92,7 +91,7 @@ export const getReviewers = async ({
 
 export const DeleteReviewerService = async (id: string) => {
   const res = await pool.query(
-    "DELETE FROM reviewers WHERE id = $1 RETURNING *",
+    "DELETE FROM users WHERE id = $1 AND role = 'REVIEWER' RETURNING *",
     [id]
   );
   return res.rows[0];

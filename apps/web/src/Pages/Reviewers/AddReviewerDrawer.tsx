@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Drawer, Box, Typography, TextField, Button, IconButton, Stack } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useForm } from "react-hook-form";
@@ -7,31 +8,50 @@ import { toast } from "react-toastify";
 type Props = {
   open: boolean;
   onClose: () => void;
+  initialData?: any;
 };
 
 type FormInputs = {
   name: string;
   email: string;
   designation: string;
+  password?: string;
 };
 
-export default function AddReviewerDrawer({ open, onClose }: Props) {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
+export default function AddReviewerDrawer({ open, onClose, initialData }: Props) {
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormInputs>();
+
+  useEffect(() => {
+     if (initialData) {
+         reset({
+             name: initialData.name,
+             email: initialData.email,
+             designation: initialData.designation
+         });
+     } else if (open) {
+         reset({
+             name: "",
+             email: "",
+             designation: "",
+             password: ""
+         });
+     }
+  }, [initialData, reset, open]);
 
   const onSubmit = async(data: FormInputs) => {
     try {
-     
-    await api.post('/reviewer/create', data)
-    toast.success("Reviewer added successfully");
-    onClose();
+      if (initialData) {
+        const { password, ...payload } = data;
+        await api.patch(`/reviewer/${initialData.id}`, payload);
+        toast.success("Reviewer updated successfully");
+      } else {
+        await api.post('/reviewer/create', data)
+        toast.success("Reviewer added successfully");
+      }
+      reset();
+      onClose();
     } catch (error: any) {
-      console.error(error);
-
-    toast.error(
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to add reviewer"
-    );
+      toast.error(error.response?.data?.message || "Operation failed");
     }
   };
 
@@ -90,6 +110,21 @@ export default function AddReviewerDrawer({ open, onClose }: Props) {
             {...register("designation", { required: "Designation is required" })}
           />
 
+          {!initialData && (
+            <TextField
+              label="Initial Password"
+              fullWidth
+              size="small"
+              type="password"
+              error={!!errors.password}
+              helperText={errors.password?.message}
+              {...register("password", { 
+                  required: "Initial password is required",
+                  minLength: { value: 6, message: "Min 6 characters" }
+              })}
+            />
+          )}
+
           <Box className="pt-4 flex gap-3">
             <Button 
                 variant="contained" 
@@ -97,7 +132,7 @@ export default function AddReviewerDrawer({ open, onClose }: Props) {
                 type="submit"
                 sx={{ textTransform: 'none', borderRadius: '8px' }}
             >
-              Add Reviewer
+              {initialData ? "Update Reviewer" : "Add Reviewer"}
             </Button>
             <Button 
                 variant="outlined" 

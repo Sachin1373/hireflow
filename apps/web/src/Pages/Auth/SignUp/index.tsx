@@ -10,15 +10,10 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "@/axiosInstance";
 
-export const ROLES = [
-  { label: "HR", value: "HR" },
-  { label: "Reviewer", value: "Reviewer" },
-];
-
 type Inputs = {
   first_name: string;
   last_name: string;
-  role: string;
+  org_name: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -30,11 +25,7 @@ const SignUp = () => {
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<Inputs>({
-    defaultValues: {
-      role: "HR",
-    },
-  });
+  } = useForm<Inputs>();
   const navigate = useNavigate();
   const password = watch("password");
 
@@ -44,12 +35,8 @@ const SignUp = () => {
       await api.post("auth/signup", payload);
       toast.success("Account created successfully");
       navigate('/login')
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("Something went wrong");
-      }
+    } catch (error: any) {
+        toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -94,23 +81,16 @@ const SignUp = () => {
 
             <Box className="flex flex-col gap-5">
               <TextField
-                select
-                label="Role"
+                label="Organization Name"
                 fullWidth
                 size="small"
-                defaultValue="HR"
-                error={!!errors.role}
-                helperText={errors.role?.message}
-                {...register("role", {
-                  required: "Role is required",
+                placeholder="Enter your company name"
+                error={!!errors.org_name}
+                helperText={errors.org_name?.message}
+                {...register("org_name", {
+                  required: "Organization Name is required",
                 })}
-              >
-                {ROLES.map((role) => (
-                  <MenuItem key={role.value} value={role.value}>
-                    {role.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Box>
 
             <Box className="flex flex-col gap-5">

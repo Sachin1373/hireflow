@@ -5,6 +5,11 @@ type User = {
   name: string;
   email: string;
   role: string;
+  org_id: string;
+  permissions: {
+    read: boolean;
+    write: boolean;
+  };
 };
 
 type AuthState = {

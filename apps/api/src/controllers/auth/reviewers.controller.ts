@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { parse } from "csv-parse/sync";
+import * as bcrypt from "bcrypt";
 import {
   checkReviewerAlreadyExists,
   CreateReviewerService,
@@ -35,19 +36,46 @@ export const DeleteReviewer = async (req: Request, res: Response) => {
   }
 };
 
+import { UpdateUser } from "../../repository/users/createUser";
+
+// ... (other types)
+
+export const UpdateReviewer = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { org_id } = (req as any).user;
+    const data = req.body;
+
+    const updatedReviewer = await UpdateUser(id as string, org_id, data);
+    
+    if (!updatedReviewer) {
+      return res.status(404).json({ message: "Reviewer not found or nothing to update" });
+    }
+
+    res.json({
+      success: true,
+      data: updatedReviewer,
+    });
+  } catch (error: any) {
+    console.error("UpdateReviewer error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 type ReviewerCSVRow = {
   name: string;
   email: string;
   designation?: string;
+  password?: string;
 };
 
 export const CreateReviewer = async (req: Request, res: Response) => {
   try {
-    const { name, email, designation } = req.body;
+    const { name, email, designation, password } = req.body;
 
-    if (!name || !email) {
+    if (!name || !email || !password) {
       return res.status(400).json({
-        message: "Name and email are required",
+        message: "Name, email and password are required",
       });
     }
 
@@ -58,13 +86,16 @@ export const CreateReviewer = async (req: Request, res: Response) => {
       });
     }
 
-    const created_by = (req as any).user?.id;
+    const { org_id, id: created_by } = (req as any).user;
+    const hashPassword = await bcrypt.hash(password, 10);
 
     const reviewer = await CreateReviewerService({
       name,
       email,
       designation,
       created_by,
+      org_id,
+      password: hashPassword
     });
 
     return res.status(201).json({
@@ -85,8 +116,9 @@ export const getAllReviewers = async (req: Request, res: Response) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const search = (req.query.search as string) || "";
+    const { org_id } = (req as any).user;
 
-    const result = await getReviewers({ page, limit, search });
+    const result = await getReviewers({ page, limit, search, org_id });
 
     res.status(200).json(result);
   } catch (error: any) {
@@ -98,7 +130,6 @@ export const getAllReviewers = async (req: Request, res: Response) => {
 
 export const BulkUploadReviewers = async (req: Request, res: Response) => {
   try {
-      console.log('req :', req)
     const file = req.file;
     if (!file) {
       return res.status(400).json({ message: "CSV file is required" });
@@ -116,11 +147,10 @@ export const BulkUploadReviewers = async (req: Request, res: Response) => {
 
 
     for (let i = 0; i < records.length; i++) {
-      const row = records[i];
-      const { name, email, designation } = row;
+      const { name, email, designation, password } = records[i];
 
-      if (!name || !email) {
-        errors.push({ row: i + 2, error: "Name and email required" });
+      if (!name || !email || !password) {
+        errors.push({ row: i + 2, error: "Name, email, and password are required" });
         continue;
       }
 
@@ -130,28 +160,24 @@ export const BulkUploadReviewers = async (req: Request, res: Response) => {
         continue;
       }
 
-      const exists = await checkReviewerAlreadyExists(email)
-    //   const exists = await pool.query(
-    //     "SELECT 1 FROM reviewers WHERE email = $1",
-    //     [email],
-    //   );
-
+      const exists = await checkReviewerAlreadyExists(email);
       if (exists) {
         errors.push({ row: i + 2, error: "Email already exists" });
         continue;
       }
+
+      const { org_id, id: created_by } = (req as any).user;
+      const hashPassword = await bcrypt.hash(password, 10);
+
       const newReviewer = {
         name,
         email,
         designation,
-        created_by: (req as any).user?.id
+        created_by,
+        org_id,
+        password: hashPassword
       }
       await CreateReviewerService(newReviewer)
-    //   await pool.query(
-    //     `INSERT INTO reviewers (name, email, designation, created_by)
-    //      VALUES ($1, $2, $3, $4)`,
-    //     [name, email, designation || null, req.user.id], // assuming auth middleware
-    //   );
 
       successCount++;
     }

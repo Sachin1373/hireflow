@@ -1,47 +1,50 @@
 import { Request, Response } from "express";
 import { CheckUserExists, CreateUser, GetUserById } from "../../repository/users/createUser";
 import { GetUserByEmail } from "../../repository/users/createUser";
+import { CreateOrganization } from "../../repository/organizations/org.repo";
 import bcrypt from 'bcrypt'
 import jwt from "jsonwebtoken";
 
 export const SignUp = async (req: Request, res: Response) => {
   try {
-    const { first_name, last_name, email, role, password } = req.body;
+    const { first_name, last_name, email, org_name, password } = req.body;
 
-    if (!first_name || !email || !role || !password) {
+    if (!first_name || !email || !org_name || !password) {
       return res.status(400).json({
-        message: "Please fill neccessary details",
+        message: "Please fill necessary details (name, email, organization, password)",
       });
     }
 
     const userExists = await CheckUserExists(email)
 
     if(userExists){
-        return res.status(500).json({
+        return res.status(409).json({
             message: 'User Already Exists'
     })
     }
 
+    const org = await CreateOrganization(org_name);
     const hashPassword = await bcrypt.hash(password,10)
 
     const newUser = {
         first_name,
         last_name,
         email,
-        role,
-        password: hashPassword
+        role: 'ADMIN',
+        password: hashPassword,
+        org_id: org.id
     }
 
-    const user = await CreateUser(newUser)
+    await CreateUser(newUser)
 
     res.status(201).json({
       success: true,
-      message: 'User Created Successfully',
+      message: 'Organization and Admin User Created Successfully',
     });
 
   } catch (error:any) {
     console.error(error.message);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: "Internal Server Error",
     });
@@ -79,6 +82,8 @@ export const Login = async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        org_id: user.org_id,
+        permissions: user.permissions
       },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
@@ -105,6 +110,8 @@ export const Login = async (req: Request, res: Response) => {
         name : user.first_name,
         email: user.email,
         role: user.role,
+        org_id: user.org_id,
+        permissions: user.permissions
       },
     });
 
@@ -132,9 +139,14 @@ export const RefreshToken = async (req: Request, res: Response) => {
       process.env.REFRESH_TOKEN_SECRET as string
     ) as { id: string };
 
+    const user = await GetUserById(decoded.id);
+
     const accessToken = jwt.sign(
       {
         id: decoded.id,
+        role: user.role,
+        org_id: user.org_id,
+        permissions: user.permissions
       },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
@@ -184,6 +196,8 @@ export const GetMe = async (req: any, res: Response) => {
         name: user.first_name,
         email: user.email,
         role: user.role,
+        org_id: user.org_id,
+        permissions: user.permissions
       },
     });
   } catch (error: any) {

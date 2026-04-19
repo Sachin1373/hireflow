@@ -1,13 +1,22 @@
 import { Outlet, NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 import NavBar from "../../Components/NavBar";
 
 export default function MainLayout() {
+  const user = useSelector((state: RootState) => state.auth.user);
+
   const navItems = [
-    { label: "Dashboard", path: "/dashboard" },
-    { label: "Jobs", path: "/dashboard/jobs" },
-    { label: "Pipeline", path: "/dashboard/pipeline" },
-    { label: "Reviewers", path: "/dashboard/reviewers" },
+    { label: "Dashboard", path: "/dashboard", roles: ["ADMIN", "HR", "REVIEWER"] },
+    { label: "Jobs", path: "/dashboard/jobs", roles: ["ADMIN", "HR"] },
+    { label: "Pipeline", path: "/dashboard/pipeline", roles: ["ADMIN", "HR"] },
+    { label: "Reviewers", path: "/dashboard/reviewers", roles: ["ADMIN", "HR"] },
+    { label: "Users", path: "/dashboard/users", roles: ["ADMIN", "HR"] },
   ];
+
+  const filteredItems = navItems.filter((item) => 
+    user && item.roles.includes(user.role)
+  );
 
   return (
     <div className="flex min-h-screen">
@@ -16,7 +25,7 @@ export default function MainLayout() {
         <h1 className="font-bold text-lg mb-6">HireFlow</h1>
 
         <nav className="flex flex-col gap-2">
-          {navItems.map((item) => (
+          {filteredItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
