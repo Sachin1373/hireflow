@@ -89,3 +89,11 @@ export const getReviewers = async ({
     },
   };
 };
+
+export const DeleteReviewerService = async (id: string) => {
+  const res = await pool.query(
+    "DELETE FROM reviewers WHERE id = $1 RETURNING *",
+    [id]
+  );
+  return res.rows[0];
+};

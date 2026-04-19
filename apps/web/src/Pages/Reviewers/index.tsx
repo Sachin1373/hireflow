@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
-import { Box, Typography, Button, Stack, Avatar, Chip } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Stack,
+  Avatar,
+  Chip,
+  IconButton,
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import SearchBar from "@/Components/SearchBar";
 import AddReviewerDrawer from "./AddReviewerDrawer";
 import BulkUploadModal from "./BulkUploadModal";
 import CustomTable from "@/Components/CustomTable";
+import ConfirmDialog from "@/Components/ConfirmDialog";
 import api from "@/axiosInstance";
+import { toast } from "react-toastify";
 import type { Reviewer } from "../../../../../packages/types/src/index";
 
 type ReviewerResponse = {
@@ -28,6 +39,10 @@ export default function ReviewersPage() {
   const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // 🔹 Deletion state
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const limit = 10;
 
@@ -52,6 +67,23 @@ export default function ReviewersPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      setIsDeleting(true);
+      await api.delete(`/reviewer/${deleteId}`);
+      toast.success("Reviewer removed successfully");
+      setDeleteId(null);
+      fetchReviewers();
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast.error(error.response?.data?.message || "Failed to remove reviewer");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   useEffect(() => {
     const delay = setTimeout(() => {
       fetchReviewers();
@@ -66,19 +98,23 @@ export default function ReviewersPage() {
       headerName: "Reviewer",
       render: (row: any) => (
         <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-          <Avatar 
-            sx={{ 
-                width: 36, 
-                height: 36, 
-                fontSize: "0.875rem", 
-                bgcolor: "black",
-                fontWeight: 600
+          <Avatar
+            sx={{
+              width: 36,
+              height: 36,
+              fontSize: "0.875rem",
+              bgcolor: "black",
+              fontWeight: 600,
             }}
           >
             {row.name.charAt(0).toUpperCase()}
           </Avatar>
           <Box>
-            <Typography variant="body2" color="text.primary" sx={{ fontWeight: '700' }}>
+            <Typography
+              variant="body2"
+              color="text.primary"
+              sx={{ fontWeight: "700" }}
+            >
               {row.name}
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -93,27 +129,27 @@ export default function ReviewersPage() {
       headerName: "Email Address",
       render: (row: any) => (
         <Typography variant="body2" color="text.secondary">
-            {row.email}
+          {row.email}
         </Typography>
-      )
+      ),
     },
     {
       field: "designation",
       headerName: "Designation",
       render: (row: any) => (
-        <Chip 
-            label={row.designation} 
-            size="small" 
-            sx={{ 
-                borderRadius: "6px", 
-                fontWeight: 500, 
-                backgroundColor: "grey.100",
-                color: "text.secondary",
-                border: "1px solid",
-                borderColor: "grey.200"
-            }} 
+        <Chip
+          label={row.designation}
+          size="small"
+          sx={{
+            borderRadius: "6px",
+            fontWeight: 500,
+            backgroundColor: "grey.100",
+            color: "text.secondary",
+            border: "1px solid",
+            borderColor: "grey.200",
+          }}
         />
-      )
+      ),
     },
     {
       field: "created_at",
@@ -121,13 +157,33 @@ export default function ReviewersPage() {
       align: "right" as const,
       render: (row: any) => (
         <Typography variant="body2" color="text.secondary">
-            {new Date(row.created_at).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            })}
+          {new Date(row.created_at).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
         </Typography>
-      )
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "",
+      align: "right" as const,
+      render: (row: any) => (
+        <IconButton
+          size="small"
+          color="error"
+          onClick={() => setDeleteId(row.id)}
+          sx={{
+            border: "1px solid",
+            borderColor: "grey.200",
+            borderRadius: "8px",
+            "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.04)" },
+          }}
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      ),
     },
   ];
 
@@ -148,7 +204,11 @@ export default function ReviewersPage() {
             variant="outlined"
             startIcon={<FileUploadIcon />}
             onClick={() => setModalOpen(true)}
-            sx={{ textTransform: "none", borderRadius: "10px", fontWeight: 600 }}
+            sx={{
+              textTransform: "none",
+              borderRadius: "10px",
+              fontWeight: 600,
+            }}
           >
             Bulk Upload
           </Button>
@@ -173,7 +233,7 @@ export default function ReviewersPage() {
       <Box className="bg-white p-4 rounded-xl border border-gray-200 mb-6 flex items-center justify-between">
         <Box sx={{ width: { xs: "100%", sm: 350 } }}>
           <SearchBar
-            placeholder="Search by name, email or designation..."
+            placeholder="Search by name, email"
             onChange={(val) => {
               setSearchQuery(val);
               setPage(1);
@@ -208,7 +268,22 @@ export default function ReviewersPage() {
 
       <BulkUploadModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          fetchReviewers();
+        }}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Remove Reviewer"
+        description="Are you sure you want to remove this reviewer? This action cannot be undone."
+        confirmText="Remove"
+        confirmColor="error"
+        loading={isDeleting}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
       />
     </Box>
   );
