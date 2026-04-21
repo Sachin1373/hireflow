@@ -4,7 +4,6 @@ import type { RootState } from "@/redux/store";
 
 export default function RequireAuth({ allowedRoles }: { allowedRoles?: string[] }) {
   const user = useSelector((state: RootState) => state.auth.user);
-
   if (!user) {
     return <Navigate to="/login" replace />;
   }

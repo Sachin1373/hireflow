@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import {
   TextField,
   IconButton,
@@ -8,18 +8,18 @@ import {
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
-type Props = TextFieldProps;
+const PasswordField = forwardRef<HTMLInputElement, TextFieldProps>(
+  (props, ref) => {
+    const [showPassword, setShowPassword] = useState(false);
 
-const PasswordField = ({ ...props }: Props) => {
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <TextField
-      {...props}
-      type={showPassword ? "text" : "password"}
-      fullWidth
-      size="small"
-      slotProps={{
+    return (
+      <TextField
+        {...props}
+        type={showPassword ? "text" : "password"}
+        inputRef={ref}
+        fullWidth
+        size="small"
+        slotProps={{
         input: {
           endAdornment: (
             <InputAdornment position="end">
@@ -33,8 +33,9 @@ const PasswordField = ({ ...props }: Props) => {
           ),
         },
       }}
-    />
-  );
-};
+      />
+    );
+  }
+);
 
 export default PasswordField;

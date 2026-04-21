@@ -3,16 +3,23 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/redux/store";
 import { logout } from "@/redux/features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
+import api from "@/axiosInstance";
 
 export default function NavBar() {
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+  try {
+    await api.post("/auth/logout");
+  } catch (err) {
+    console.error(err);
+  } finally {
     dispatch(logout());
-    navigate("/login");
-  };
+    navigate("/login", { replace: true });
+  }
+};
 
   return (
     <AppBar

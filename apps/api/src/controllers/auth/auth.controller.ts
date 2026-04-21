@@ -82,6 +82,7 @@ export const Login = async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        user_id: user.id,
         org_id: user.org_id,
         permissions: user.permissions
       },
@@ -110,8 +111,6 @@ export const Login = async (req: Request, res: Response) => {
         name : user.first_name,
         email: user.email,
         role: user.role,
-        org_id: user.org_id,
-        permissions: user.permissions
       },
     });
 
@@ -145,6 +144,7 @@ export const RefreshToken = async (req: Request, res: Response) => {
       {
         id: decoded.id,
         role: user.role,
+        user_id: user.id,
         org_id: user.org_id,
         permissions: user.permissions
       },
@@ -207,4 +207,12 @@ export const GetMe = async (req: any, res: Response) => {
       message: "Internal Server Error",
     });
   }
+};
+
+export const logoutUser = async (req: Request, res: Response) => {
+  res.clearCookie("refreshToken");
+
+  return res.status(200).json({
+    message: "Logged out successfully",
+  });
 };

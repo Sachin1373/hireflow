@@ -73,6 +73,7 @@ const Login = () => {
                 helperText={errors.email?.message}
                 {...register("email", {
                   required: "Email is required",
+                  setValueAs: (v) => v.trim(),
                   pattern: {
                     value: /^\S+@\S+$/i,
                     message: "Invalid email address",
@@ -85,6 +86,7 @@ const Login = () => {
                 helperText={errors.password?.message}
                 {...register("password", {
                   required: "Password is required",
+                  setValueAs: (v) => v.trim(),
                   minLength: {
                     value: 6,
                     message: "Minimum 6 characters",

@@ -19,6 +19,9 @@ export interface Job {
   form_expires_at: string
   status: JobStatus
   created_at: string
+  slug: string
+  org_id: string
+  updated_at: string
 }
 
 export interface ShortlistConfig {
@@ -37,6 +40,8 @@ export interface FormField {
   label: string
   required: boolean
   position: number
+  options: string[]
+  placeholder: string
 }
 
 export interface Application {

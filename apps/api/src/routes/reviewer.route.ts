@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CreateReviewer, getAllReviewers, BulkUploadReviewers, DeleteReviewer, UpdateReviewer } from "../controllers/auth/reviewers.controller";
+import { CreateReviewer, getAllReviewers, BulkUploadReviewers, DeleteReviewer, UpdateReviewer } from "../controllers/reviewers/reviewers.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { upload } from "../middleware/upload";
 

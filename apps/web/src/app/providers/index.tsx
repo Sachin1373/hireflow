@@ -8,6 +8,9 @@ import { refreshAccessToken, fetchMe } from "@/redux/features/auth/authAPI";
 import { setAccessToken, setUser, setSessionRestored } from "@/redux/features/auth/authSlice";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+
 
 type Props = {
   children: ReactNode;
@@ -48,6 +51,7 @@ export function AppProviders({ children }: Props) {
     <Provider store={store}>
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
           <CssBaseline />
           <AuthInitializer>{children}</AuthInitializer>
           <ToastContainer
@@ -62,6 +66,7 @@ export function AppProviders({ children }: Props) {
             pauseOnHover
             theme="colored"
           />
+          </LocalizationProvider>
         </ThemeProvider>
       </StyledEngineProvider>
     </Provider>

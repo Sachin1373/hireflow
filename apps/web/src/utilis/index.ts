@@ -16,3 +16,10 @@ Jane Smith,jane@example.com,Frontend Engineer,Reviewer@456`;
     document.body.removeChild(link);
     URL.revokeObjectURL(url)
 }
+
+export const JobSteps = [
+  { title: "Job Meta Data", description: "Define job role, title, and description" },
+  { title: "Application Form", description: "Customize candidate application fields" },
+  { title: "Reviewers", description: "Assign reviewers and hiring team" },
+  { title: "Preview", description: "Review everything before publishing" },
+];

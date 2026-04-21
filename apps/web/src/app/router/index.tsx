@@ -8,6 +8,7 @@ import UsersPage from "@/Pages/Users";
 import SignUp from "@/Pages/Auth/SignUp";
 import Login from "@/Pages/Auth/Login";
 import RequireAuth from "@/Components/RequireAuth";
+import CreateNewJob from "@/Pages/Jobs/CreateNewJob";
 
 export const router = createBrowserRouter([
   {
@@ -18,11 +19,19 @@ export const router = createBrowserRouter([
         element: <MainLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
-          
+
           {
             element: <RequireAuth allowedRoles={["ADMIN", "HR"]} />,
             children: [
-              { path: "jobs", element: <JobsPage /> },
+              {
+                path: "jobs",
+                children: [
+                  { index: true, element: <JobsPage /> },
+                  { path: "new", element: <CreateNewJob /> },
+                  // { path: ":jobId", element: <JobDetails /> },
+                  // { path: ":jobId/edit", element: <EditJob /> },
+                ]
+              },
               { path: "pipeline", element: <PipelinePage /> },
               { path: "reviewers", element: <ReviewersPage /> },
               { path: "users", element: <UsersPage /> },

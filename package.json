@@ -12,10 +12,5 @@
     "dev:worker": "cd apps/workers && go run cmd/main.go",
     "db:migrate": "npm -w apps/api run migrate",
     "install:all": "npm install && cd apps/worker && go mod tidy"
-  },
-  "dependencies": {
-    "csv-parse": "^6.2.1",
-    "multer": "^2.1.1",
-    "react-router-dom": "^7.14.1"
   }
 }

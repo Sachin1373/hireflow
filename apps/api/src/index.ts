@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from '../src/routes/auth.route';
 import reviewersRoute from "../src/routes/reviewer.route"
 import userRoutes from "../src/routes/users.route"
+import JobRoutes from "../src/routes/jobs.route"
 
 dotenv.config()
 
@@ -22,6 +23,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 app.use('/api/auth',  authRoutes)
 app.use('/api/reviewer', reviewersRoute)
 app.use('/api/users', userRoutes)
+app.use('/api/jobs', JobRoutes)
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err)
