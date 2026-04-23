@@ -20,6 +20,9 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+  const limit = 10;
 
   // Delete state
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -28,8 +31,11 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/users/list");
+      const res = await api.get(`/users/list?page=${page}&limit=${limit}&search=${searchQuery}`);
       setUsers(res.data.data);
+      if (res.data.pagination) {
+        setTotal(res.data.pagination.total);
+      }
     } catch (error) {
       console.error("Fetch users error:", error);
     } finally {
@@ -54,7 +60,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [page, searchQuery]);
 
   const columns = [
     {
@@ -128,11 +134,7 @@ export default function UsersPage() {
     },
   ];
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Removed client-side filtering
 
   const canWrite =
     currentUser?.role === "ADMIN" ||
@@ -179,12 +181,12 @@ export default function UsersPage() {
 
       <CustomTable
         columns={columns}
-        rows={filteredUsers}
+        rows={users}
         loading={loading}
-        page={1}
-        total={filteredUsers.length}
-        rowsPerPage={100}
-        onPageChange={() => {}}
+        page={page}
+        total={total}
+        rowsPerPage={limit}
+        onPageChange={(newPage) => setPage(newPage)}
       />
 
       <AddUserDrawer

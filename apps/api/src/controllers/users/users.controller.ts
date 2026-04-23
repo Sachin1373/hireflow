@@ -64,11 +64,20 @@ export const UpdateOrgUser = async (req: any, res: Response) => {
 export const GetOrgUsers = async (req: any, res: Response) => {
   try {
     const { org_id } = req.user;
-    const users = await GetOrgUsersRepo(org_id);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || "";
+    
+    const result = await GetOrgUsersRepo(org_id, page, limit, search);
 
     res.json({
       success: true,
-      data: users,
+      data: result.users,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit
+      }
     });
   } catch (error: any) {
     console.error("GetOrgUsers error:", error);

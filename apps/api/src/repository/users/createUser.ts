@@ -102,15 +102,31 @@ export const GetUserById = async(id:string) => {
     return res.rows[0];
 }
 
-export const GetOrgUsersRepo = async (org_id: string) => {
-  const res = await pool.query(
-    `SELECT id, first_name, last_name, email, role, permissions, created_at 
+export const GetOrgUsersRepo = async (org_id: string, page: number = 1, limit: number = 10, search: string = "") => {
+  const offset = (page - 1) * limit;
+  let baseQuery = `
      FROM users 
-     WHERE org_id = $1 AND role IN ('ADMIN', 'HR') 
-     ORDER BY created_at DESC`,
-    [org_id]
-  );
-  return res.rows;
+     WHERE org_id = $1 AND role IN ('ADMIN', 'HR')
+  `;
+  const values: any[] = [org_id];
+
+  if (search) {
+    baseQuery += ` AND (first_name ILIKE $2 OR last_name ILIKE $2 OR email ILIKE $2)`;
+    values.push(`%${search}%`);
+  }
+
+  const countRes = await pool.query(`SELECT COUNT(*) ${baseQuery}`, values);
+  const total = parseInt(countRes.rows[0].count, 10);
+
+  const query = `
+     SELECT id, first_name, last_name, email, role, permissions, created_at 
+     ${baseQuery}
+     ORDER BY created_at DESC 
+     LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+  `;
+  const res = await pool.query(query, [...values, limit, offset]);
+
+  return { users: res.rows, total, page, limit };
 };
 
 export const DeleteUserRepo = async (id: string, org_id: string) => {

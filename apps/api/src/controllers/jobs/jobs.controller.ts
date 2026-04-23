@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { jobCreation } from "../../repository/jobs/jobs.repo";
+import { getAllJobs, jobCreation } from "../../repository/jobs/jobs.repo";
 
 export const CreateJob = async (req: Request, res: Response) => {
   try {
@@ -32,3 +32,27 @@ export const CreateJob = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const GetAllJobs = async(req: Request, res: Response) => {
+  try {
+    const { org_id } = (req as any).user;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || "";
+
+    const result = await getAllJobs(org_id, page, limit, search);
+
+    return res.status(200).json({
+      success: true,
+      data: result.jobs,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit
+      }
+    });
+  } catch (error: any) {
+    console.error("GetAllJobs error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
