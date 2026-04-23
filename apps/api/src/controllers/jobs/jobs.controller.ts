@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
-import { getAllJobs, jobCreation } from "../../repository/jobs/jobs.repo";
+import {
+  getAllJobs,
+  jobCreation,
+  getJobById,
+  updateJob,
+  assignJobReviewers,
+} from "../../repository/jobs/jobs.repo";
 
 export const CreateJob = async (req: Request, res: Response) => {
   try {
@@ -56,3 +62,82 @@ export const GetAllJobs = async(req: Request, res: Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+export const GetJob = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { org_id } = (req as any).user;
+    
+    if (!id) {
+       return res.status(400).json({ message: "Job ID required" });
+    }
+
+    const job = await getJobById(id as string, org_id);
+    if (!job) {
+       return res.status(404).json({ message: "Job not found" });
+    }
+    
+    return res.status(200).json({ success: true, data: job });
+  } catch (error) {
+    console.error("GetJob error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const UpdateJob = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { org_id } = (req as any).user;
+    const data = req.body;
+
+    if (!id) {
+       return res.status(400).json({ message: "Job ID required" });
+    }
+
+    const job = await updateJob(id as string, data, org_id);
+    if (!job) {
+       return res.status(404).json({ message: "Job not found or nothing to update" });
+    }
+    
+    return res.status(200).json({ success: true, data: job });
+  } catch (error) {
+    console.error("UpdateJob error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const SaveJobReviewers = async (req: Request, res: Response) => {
+  try {
+    const { job_id } = req.params;
+    const { reviewerIds } = req.body;
+    const { org_id } = (req as any).user;
+
+    if (!job_id) {
+      return res.status(400).json({ message: "Job ID is required" });
+    }
+
+    if (!Array.isArray(reviewerIds)) {
+      return res.status(400).json({ message: "Reviewer IDs must be an array" });
+    }
+
+    const result = await assignJobReviewers(job_id as string, reviewerIds, org_id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Reviewers saved successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("SaveJobReviewers error:", error);
+
+    if (error?.message === "Job not found") {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    if (error?.message === "One or more reviewers are invalid") {
+      return res.status(400).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

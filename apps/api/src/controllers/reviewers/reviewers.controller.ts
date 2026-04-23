@@ -6,6 +6,7 @@ import {
   CreateReviewerService,
   getReviewers,
   DeleteReviewerService,
+  AssignReviewersToJob,
 } from "../../repository/reviewers/reviewers.repo";
 
 // ... (previous logic)
@@ -189,5 +190,33 @@ export const BulkUploadReviewers = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Bulk upload failed" });
+  }
+};
+
+export const SaveJobReviewers = async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+    const { reviewerIds } = req.body;
+    const { org_id } = (req as any).user;
+
+    if (!jobId) {
+      return res.status(400).json({ message: "Job ID is required" });
+    }
+
+    if (!Array.isArray(reviewerIds)) {
+      return res.status(400).json({ message: "Reviewer IDs must be an array" });
+    }
+
+    await AssignReviewersToJob(jobId as string, reviewerIds, org_id);
+
+    return res.json({
+      success: true,
+      message: "Reviewers assigned successfully",
+    });
+  } catch (error: any) {
+    console.error("SaveJobReviewers error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to assign reviewers",
+    });
   }
 };

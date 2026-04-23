@@ -96,3 +96,29 @@ export const DeleteReviewerService = async (id: string) => {
   );
   return res.rows[0];
 };
+
+export const AssignReviewersToJob = async (jobId: string, reviewerIds: string[], org_id: string) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Clear existing links
+    await client.query('DELETE FROM reviewer_links WHERE job_id = $1', [jobId]);
+
+    // Insert new links
+    for (const rid of reviewerIds) {
+      await client.query(
+        'INSERT INTO reviewer_links (job_id, reviewer_id, org_id) VALUES ($1, $2, $3)',
+        [jobId, rid, org_id]
+      );
+    }
+
+    await client.query('COMMIT');
+    return true;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};

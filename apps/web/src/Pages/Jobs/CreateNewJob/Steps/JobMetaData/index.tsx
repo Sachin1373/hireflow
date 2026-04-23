@@ -20,24 +20,31 @@ type JobMetaDataType = {
 };
 
 type Props = {
+  jobId?: string | null;
   data: JobMetaDataType;
   setData: (data: JobMetaDataType) => void;
   registerSave: (fn: () => Promise<boolean>) => void;
 };
 
-const JobMetaData = ({ data, setData, registerSave }: Props) => {
+const JobMetaData = ({ jobId, data, setData, registerSave }: Props) => {
   useEffect(() => {
     registerSave(async () => {
       try {
-        await api.post('/jobs/create', data)
-        toast.success("User removed successfully");
+        if (jobId) {
+          await api.patch(`/jobs/${jobId}`, data);
+          toast.success("Job details updated");
+        } else {
+          await api.post('/jobs/create', data);
+          toast.success("Job draft created");
+        }
         return true;
       } catch (err) {
         console.error(err);
+        toast.error("Failed to save job details");
         return false;
       }
     });
-  }, [data]);
+  }, [data, jobId]);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <TextField

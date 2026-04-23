@@ -59,7 +59,19 @@ export default function JobsPage() {
       field: "title",
       headerName: "Title",
       render: (row: any) => (
-        <Typography variant="body2" sx={{ fontWeight: "600" }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontWeight: "600",
+            cursor: row.status === 'draft' || !row.status ? 'pointer' : 'default',
+            color: row.status === 'draft' || !row.status ? 'primary.main' : 'inherit'
+          }}
+          onClick={() => {
+            if (row.status === 'draft' || !row.status) {
+              navigate(`/dashboard/jobs/new?jobId=${row.id}`);
+            }
+          }}
+        >
           {row.title}
         </Typography>
       ),

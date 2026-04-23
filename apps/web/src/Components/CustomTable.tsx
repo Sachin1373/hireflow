@@ -14,7 +14,7 @@ import {
 
 type Column = {
   field: string;
-  headerName: string;
+  headerName: React.ReactNode;
   align?: "left" | "right" | "center";
   render?: (row: any) => React.ReactNode;
 };
