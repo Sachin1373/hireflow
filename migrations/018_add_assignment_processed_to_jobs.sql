@@ -1,0 +1,2 @@
+ALTER TABLE jobs
+ADD COLUMN assignment_processed BOOLEAN DEFAULT FALSE;
