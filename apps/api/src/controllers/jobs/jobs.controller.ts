@@ -7,6 +7,7 @@ import {
   assignJobReviewers,
   deleteJob,
   getJobStatusById,
+  getJobMetaData,
 } from "../../repository/jobs/jobs.repo";
 
 export const CreateJob = async (req: Request, res: Response) => {
@@ -20,7 +21,7 @@ export const CreateJob = async (req: Request, res: Response) => {
 
     const job = await jobCreation(
       {
-        title,  
+        title,
         description,
         jd_content,
       },
@@ -41,7 +42,7 @@ export const CreateJob = async (req: Request, res: Response) => {
   }
 };
 
-export const GetAllJobs = async(req: Request, res: Response) => {
+export const GetAllJobs = async (req: Request, res: Response) => {
   try {
     const { org_id } = (req as any).user;
     const page = parseInt(req.query.page as string) || 1;
@@ -49,42 +50,42 @@ export const GetAllJobs = async(req: Request, res: Response) => {
     const search = (req.query.search as string) || "";
 
     const result = await getAllJobs(org_id, page, limit, search);
-
+    console.log('result :', result)
     return res.status(200).json({
       success: true,
       data: result.jobs,
       pagination: {
         total: result.total,
         page: result.page,
-        limit: result.limit
-      }
+        limit: result.limit,
+      },
     });
   } catch (error: any) {
     console.error("GetAllJobs error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 export const GetJob = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { org_id } = (req as any).user;
-    
+
     if (!id) {
-       return res.status(400).json({ message: "Job ID required" });
+      return res.status(400).json({ message: "Job ID required" });
     }
 
     const job = await getJobById(id as string, org_id);
     if (!job) {
-       return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({ message: "Job not found" });
     }
-    
+
     return res.status(200).json({ success: true, data: job });
   } catch (error) {
     console.error("GetJob error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 export const UpdateJob = async (req: Request, res: Response) => {
   try {
@@ -93,29 +94,35 @@ export const UpdateJob = async (req: Request, res: Response) => {
     const data = req.body;
 
     if (!id) {
-       return res.status(400).json({ message: "Job ID required" });
+      return res.status(400).json({ message: "Job ID required" });
     }
 
     const existingJob = await getJobStatusById(id as string, org_id);
     if (!existingJob) {
-      return res.status(404).json({ message: "Job not found or nothing to update" });
+      return res
+        .status(404)
+        .json({ message: "Job not found or nothing to update" });
     }
 
     if (existingJob.status === "submitted") {
-      return res.status(400).json({ message: "Submitted jobs cannot be edited" });
+      return res
+        .status(400)
+        .json({ message: "Submitted jobs cannot be edited" });
     }
 
     const job = await updateJob(id as string, data, org_id);
     if (!job) {
-       return res.status(404).json({ message: "Job not found or nothing to update" });
+      return res
+        .status(404)
+        .json({ message: "Job not found or nothing to update" });
     }
-    
+
     return res.status(200).json({ success: true, data: job });
   } catch (error) {
     console.error("UpdateJob error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 export const DeleteJob = async (req: Request, res: Response) => {
   try {
@@ -131,7 +138,9 @@ export const DeleteJob = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
-    return res.status(200).json({ success: true, message: "Job deleted successfully" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Job deleted successfully" });
   } catch (error) {
     console.error("DeleteJob error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -158,10 +167,16 @@ export const SaveJobReviewers = async (req: Request, res: Response) => {
     }
 
     if (existingJob.status === "submitted") {
-      return res.status(400).json({ message: "Submitted jobs cannot be edited" });
+      return res
+        .status(400)
+        .json({ message: "Submitted jobs cannot be edited" });
     }
 
-    const result = await assignJobReviewers(job_id as string, reviewerIds, org_id);
+    const result = await assignJobReviewers(
+      job_id as string,
+      reviewerIds,
+      org_id,
+    );
 
     return res.status(200).json({
       success: true,
@@ -180,5 +195,29 @@ export const SaveJobReviewers = async (req: Request, res: Response) => {
     }
 
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const JobMetadata = async (req: Request, res: Response) => {
+  try {
+    const { job_id } = req.params;
+    if (!job_id) {
+      return res.status(400).json({ message: "Job ID is required" });
+    }
+    const job = await getJobMetaData(job_id as string);
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found",
+      });
+    }
+    return res.status(200).json({
+      data: job,
+    });
+  } catch (error: any) {
+    console.error("Get job metadata error:", error);
+
+    return res.status(500).json({
+      message: error.message || "Failed to fetch job metadata",
+    });
   }
 };

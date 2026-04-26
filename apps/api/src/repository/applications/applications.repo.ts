@@ -65,3 +65,22 @@ export const createPublicApplication = async (input: CreatePublicApplicationInpu
     client.release();
   }
 };
+
+export const getApplications = async(job_id: string, page: number = 1, limit: number = 10, search: string = "") => {
+  const offset = (page - 1) * limit;
+  let baseQuery = `FROM applications WHERE job_id = $1`;
+  const values: any[] = [job_id];
+
+  if (search) {
+    baseQuery += ` AND (title ILIKE $2 OR description ILIKE $2)`;
+    values.push(`%${search}%`);
+  }
+
+  const countRes = await pool.query(`SELECT COUNT(*) ${baseQuery}`, values);
+  const total = parseInt(countRes.rows[0].count, 10);
+
+  const query = `SELECT * ${baseQuery} ORDER BY applied_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+  const res = await pool.query(query, [...values, limit, offset]);
+
+  return { applications: res.rows, total, page, limit };
+}

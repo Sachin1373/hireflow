@@ -9,7 +9,7 @@ export default function MainLayout() {
   const navItems = [
     { label: "Dashboard", path: "/dashboard", roles: ["ADMIN", "HR", "REVIEWER"] },
     { label: "Jobs", path: "/dashboard/jobs", roles: ["ADMIN", "HR"] },
-    { label: "Pipeline", path: "/dashboard/pipeline", roles: ["ADMIN", "HR"] },
+    { label: "Applications", path: "/dashboard/applications", roles: ["ADMIN", "HR"] },
     { label: "Reviewers", path: "/dashboard/reviewers", roles: ["ADMIN", "HR"] },
     { label: "Users", path: "/dashboard/users", roles: ["ADMIN", "HR"] },
   ];

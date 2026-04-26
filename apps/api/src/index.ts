@@ -9,7 +9,7 @@ import reviewersRoute from "../src/routes/reviewer.route"
 import userRoutes from "../src/routes/users.route"
 import JobRoutes from "../src/routes/jobs.route"
 import publicRoutes from "../src/routes/public.route";
-
+import ApplicationRoutes from "../src/routes/applications.route";
 dotenv.config()
 
 const app = express()
@@ -27,7 +27,8 @@ app.use('/api/auth',  authRoutes)
 app.use('/api/reviewer', reviewersRoute)
 app.use('/api/users', userRoutes)
 app.use('/api/jobs', JobRoutes)
-app.use("/api/public", publicRoutes);
+app.use('/api/public', publicRoutes);
+app.use('/api/applications', ApplicationRoutes)
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err)

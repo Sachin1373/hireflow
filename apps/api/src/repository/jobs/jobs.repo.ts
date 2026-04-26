@@ -217,3 +217,9 @@ export const getPublicJobBySlug = async (slug: string) => {
   };
 };
 
+export const getJobMetaData = async(job_id: string) => {
+  const res = await pool.query('SELECT * FROM jobs WHERE id = $1', [job_id])
+
+  return res.rows[0]
+}
+

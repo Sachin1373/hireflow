@@ -7,6 +7,7 @@ import {
   UpdateJob,
   SaveJobReviewers,
   DeleteJob,
+  JobMetadata,
 } from "../controllers/jobs/jobs.controller";
 import { SaveFormFields, GetFormFields } from "../controllers/formFields/formFields.controller";
 
@@ -20,5 +21,6 @@ route.delete('/:id', authenticateToken, DeleteJob)
 route.post('/:job_id/fields', authenticateToken, SaveFormFields)
 route.get('/:job_id/fields', authenticateToken, GetFormFields)
 route.post('/:job_id/reviewers', authenticateToken, SaveJobReviewers)
+route.get('/:job_id/metedata', authenticateToken, JobMetadata)
 
 export default route;
