@@ -7,10 +7,6 @@ import {
 } from "../../repository/applications/applications.repo";
 
 const applicationSchema = z.object({
-  candidate_name: z.string().trim().min(1, "Candidate name is required"),
-  candidate_email: z.string().trim().email("Valid candidate email is required"),
-  candidate_phone: z.string().trim().optional(),
-  resume_url: z.string().trim().optional(),
   responses: z.array(
     z.object({
       field_id: z.string().uuid("Invalid field id"),
@@ -18,6 +14,53 @@ const applicationSchema = z.object({
     })
   ),
 });
+
+type PublicField = {
+  id: string;
+  field_type?: string;
+  label?: string;
+};
+
+const inferCandidateProfile = (
+  fields: PublicField[],
+  submittedById: Map<string, string>
+) => {
+  let candidate_name = "";
+  let candidate_email = "";
+  let candidate_phone = "";
+  let resume_url = "";
+
+  for (const field of fields) {
+    const value = (submittedById.get(field.id) || "").trim();
+    if (!value) continue;
+
+    const label = (field.label || "").toLowerCase();
+    const type = (field.field_type || "").toLowerCase();
+
+    if (!candidate_name && (label.includes("name") || label.includes("full name"))) {
+      candidate_name = value;
+    }
+
+    if (!candidate_email && (type === "email" || label.includes("email"))) {
+      candidate_email = value;
+    }
+
+    if (!candidate_phone && (label.includes("phone") || label.includes("mobile"))) {
+      candidate_phone = value;
+    }
+
+    if (!resume_url && (type === "file" || label.includes("resume") || label.includes("cv"))) {
+      resume_url = value;
+    }
+  }
+
+  return {
+    candidate_name: candidate_name || "Candidate",
+    candidate_email,
+    candidate_phone: candidate_phone || undefined,
+    resume_url: resume_url || undefined,
+  };
+};
 
 export const GetPublicJob = async (req: Request, res: Response) => {
   try {
@@ -76,13 +119,18 @@ export const SubmitPublicApplication = async (req: Request, res: Response) => {
     }
 
     const payload = parsed.data;
-    const existing = await hasExistingApplication(job.id, payload.candidate_email);
+    const fieldsById = new Map(job.fields.map((field: any) => [field.id, field]));
+    const submittedById = new Map(payload.responses.map((response) => [response.field_id, response.value]));
+
+    const inferred = inferCandidateProfile(job.fields, submittedById);
+    if (!inferred.candidate_email) {
+      return res.status(400).json({ message: "Form response must include an email field" });
+    }
+
+    const existing = await hasExistingApplication(job.id, inferred.candidate_email);
     if (existing) {
       return res.status(409).json({ message: "Application already submitted for this email" });
     }
-
-    const fieldsById = new Map(job.fields.map((field: any) => [field.id, field]));
-    const submittedById = new Map(payload.responses.map((response) => [response.field_id, response.value]));
 
     for (const field of job.fields) {
       if (field.required) {
@@ -94,14 +142,14 @@ export const SubmitPublicApplication = async (req: Request, res: Response) => {
     }
 
     const allowedResponses = payload.responses.filter((response) => fieldsById.has(response.field_id));
-
+    // return;
     const created = await createPublicApplication({
       job_id: job.id,
-      org_id: (job as any).org_id,
-      candidate_name: payload.candidate_name,
-      candidate_email: payload.candidate_email,
-      candidate_phone: payload.candidate_phone,
-      resume_url: payload.resume_url,
+      org_id: job.org_id,
+      candidate_name: inferred.candidate_name,
+      candidate_email: inferred.candidate_email,
+      candidate_phone: inferred.candidate_phone,
+      resume_url: inferred.resume_url,
       responses: allowedResponses,
     });
 
@@ -112,6 +160,27 @@ export const SubmitPublicApplication = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("SubmitPublicApplication error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const UploadPublicResume = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Resume file is required" });
+    }
+
+    const resumeUrl = `/uploads/resumes/${req.file.filename}`;
+    return res.status(201).json({
+      success: true,
+      data: {
+        file_name: req.file.originalname,
+        stored_name: req.file.filename,
+        url: resumeUrl,
+      },
+    });
+  } catch (error) {
+    console.error("UploadPublicResume error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SearchBar from "@/Components/SearchBar";
 import CustomTable from "@/Components/CustomTable";
 import ActionMenu from "@/Components/ActionMenu";
@@ -18,6 +19,7 @@ type JobRow = {
   title: string;
   status?: string;
   created_at?: string;
+  slug?: string;
 };
 
 export default function JobsPage() {
@@ -71,6 +73,22 @@ export default function JobsPage() {
     setDeleteDialogOpen(true);
   };
 
+  const handleCopyCandidateLink = async (job: JobRow) => {
+    if (!job.slug) {
+      toast.error("Candidate link is not available yet");
+      return;
+    }
+
+    const candidateUrl = `${window.location.origin}/apply/${job.slug}`;
+    try {
+      await navigator.clipboard.writeText(candidateUrl);
+      toast.success("Candidate link copied");
+    } catch (error) {
+      console.error("Copy candidate link error:", error);
+      toast.error("Failed to copy candidate link");
+    }
+  };
+
   const handleDeleteJob = async () => {
     if (!jobToDelete) return;
     try {
@@ -92,6 +110,7 @@ export default function JobsPage() {
     {
       field: "title",
       headerName: "Title",
+
       render: (row: JobRow) => (
         <Typography
           variant="body2"
@@ -99,6 +118,7 @@ export default function JobsPage() {
             fontWeight: "600",
             cursor:
               row.status === "draft" || !row.status ? "pointer" : "default",
+
             color:
               row.status === "draft" || !row.status
                 ? "primary.main"
@@ -117,21 +137,26 @@ export default function JobsPage() {
     {
       field: "status",
       headerName: "Status",
+
       render: (row: JobRow) => (
         <Chip
           label={row.status || "Draft"}
           size="small"
           sx={{
             borderRadius: "6px",
+
             bgcolor: row.status === "active" ? "success.main" : "black",
+
             color: "white",
           }}
         />
       ),
     },
+
     {
       field: "created_at",
       headerName: "Created At",
+
       render: (row: JobRow) => (
         <Typography variant="body2" color="text.secondary">
           {row.created_at ? new Date(row.created_at).toLocaleDateString() : ""}
@@ -139,9 +164,28 @@ export default function JobsPage() {
       ),
     },
     {
+      field: "candidate_link",
+      headerName: "Candidate Link",
+
+      render: (row: JobRow) => (
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<ContentCopyIcon fontSize="small" />}
+          onClick={() => handleCopyCandidateLink(row)}
+          sx={{
+            textTransform: "none",
+            borderRadius: "8px",
+          }}
+        >
+          Copy Link
+        </Button>
+      ),
+    },
+    {
       field: "actions",
-      headerName: "",
-      align: "right" as const,
+      headerName: "Action",
+      align: "center" as const,
 
       render: (row: JobRow) => {
         const actions = [];
@@ -149,16 +193,22 @@ export default function JobsPage() {
         if (row.status !== "submitted") {
           actions.push({
             label: "Edit",
+
             icon: <EditIcon fontSize="small" />,
+
             onClick: () => handleEdit(row),
           });
         }
 
         actions.push({
           label: "Delete",
+
           icon: <DeleteIcon fontSize="small" />,
+
           onClick: () => handleOpenDeleteDialog(row),
+
           color: "#d32f2f",
+
           dividerBefore: true,
         });
 

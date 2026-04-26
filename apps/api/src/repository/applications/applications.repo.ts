@@ -33,11 +33,12 @@ export const createPublicApplication = async (input: CreatePublicApplicationInpu
     await client.query("BEGIN");
 
     const applicationRes = await client.query(
-      `INSERT INTO applications (job_id, candidate_name, candidate_email, candidate_phone, resume_url)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO applications (job_id, org_id, candidate_name, candidate_email, candidate_phone, resume_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, job_id, status, applied_at`,
       [
         input.job_id,
+        input.org_id,
         input.candidate_name,
         input.candidate_email,
         input.candidate_phone ?? null,

@@ -1,5 +1,4 @@
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import {
   Alert,
   Box,
@@ -9,11 +8,15 @@ import {
   MenuItem,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import api from "@/axiosInstance";
+import DOMPurify from "dompurify";
 
 type PublicField = {
   id: string;
@@ -33,37 +36,6 @@ type PublicJobPayload = {
   fields: PublicField[];
 };
 
-const API_BASE_URL = "http://localhost:3001/api";
-
-const normalizeLabel = (label: string) => label.trim().toLowerCase();
-
-const inferCandidateCoreFields = (fields: PublicField[], values: Record<string, string>) => {
-  let candidateName = "";
-  let candidateEmail = "";
-  let candidatePhone = "";
-  let resumeUrl = "";
-
-  for (const field of fields) {
-    const value = values[field.id]?.trim() || "";
-    const normalized = normalizeLabel(field.label);
-
-    if (!candidateName && (normalized.includes("name") || normalized.includes("full name"))) {
-      candidateName = value;
-    }
-    if (!candidateEmail && normalized.includes("email")) {
-      candidateEmail = value;
-    }
-    if (!candidatePhone && (normalized.includes("phone") || normalized.includes("mobile"))) {
-      candidatePhone = value;
-    }
-    if (!resumeUrl && (normalized.includes("resume") || normalized.includes("cv"))) {
-      resumeUrl = value;
-    }
-  }
-
-  return { candidateName, candidateEmail, candidatePhone, resumeUrl };
-};
-
 export default function PublicApplyPage() {
   const { publicToken } = useParams();
   const [loading, setLoading] = useState(true);
@@ -71,6 +43,10 @@ export default function PublicApplyPage() {
   const [job, setJob] = useState<PublicJobPayload | null>(null);
   const [errorState, setErrorState] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"jd" | "form">("form");
+  const [uploadingFieldId, setUploadingFieldId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPublicJob = async () => {
@@ -81,7 +57,7 @@ export default function PublicApplyPage() {
       }
 
       try {
-        const response = await axios.get(`${API_BASE_URL}/public/jobs/${publicToken}`);
+        const response = await api.get(`public/jobs/${publicToken}`);
         const payload: PublicJobPayload = response.data.data;
         setJob(payload);
 
@@ -90,6 +66,8 @@ export default function PublicApplyPage() {
           return acc;
         }, {});
         setValues(initialValues);
+        setTouched({});
+        setSubmitAttempted(false);
       } catch (error: any) {
         setErrorState(error?.response?.data?.message || "Unable to open this application link.");
       } finally {
@@ -105,9 +83,18 @@ export default function PublicApplyPage() {
   }, [job]);
 
   const getFieldError = (field: PublicField) => {
-    if (!field.required) return "";
-    if (values[field.id]?.trim()) return "";
-    return `${field.label} is required`;
+    const value = values[field.id]?.trim() || "";
+    const canShowError = submitAttempted || !!touched[field.id];
+
+    if (!canShowError) return "";
+    if (field.required && !value) return `${field.label} is required`;
+
+    if (value && field.field_type.toUpperCase() === "EMAIL") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) return "Please enter a valid email";
+    }
+
+    return "";
   };
 
   const validateForm = () => {
@@ -122,6 +109,36 @@ export default function PublicApplyPage() {
 
   const handleChange = (fieldId: string, value: string) => {
     setValues((prev) => ({ ...prev, [fieldId]: value }));
+    setTouched((prev) => ({ ...prev, [fieldId]: true }));
+  };
+
+  const handleFileChange = async (fieldId: string, file?: File) => {
+    if (!file) return;
+
+    try {
+      setUploadingFieldId(fieldId);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await api.post("/public/uploads/resume", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const url = res?.data?.data?.url as string | undefined;
+      if (!url) {
+        toast.error("Upload failed");
+        return;
+      }
+
+      setValues((prev) => ({ ...prev, [fieldId]: url }));
+      setTouched((prev) => ({ ...prev, [fieldId]: true }));
+      toast.success("Resume uploaded");
+    } catch (error: any) {
+      console.error("Resume upload error:", error);
+      toast.error(error?.response?.data?.message || "Failed to upload resume");
+    } finally {
+      setUploadingFieldId(null);
+    }
   };
 
   const renderField = (field: PublicField) => {
@@ -164,7 +181,51 @@ export default function PublicApplyPage() {
     }
 
     if (fieldType === "FILE") {
-      return <TextField type="url" {...commonProps} placeholder={field.placeholder || "Paste file URL"} />;
+      const fieldError = getFieldError(field);
+      return (
+        <Stack spacing={1}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {field.label}
+            {field.required ? " *" : ""}
+          </Typography>
+          <Box
+            sx={{
+              border: "1px dashed",
+              borderColor: fieldError ? "error.main" : "grey.400",
+              borderRadius: 2,
+              py: 4,
+              px: 2,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+              Upload your file or drag and drop here
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Supported formats: .pdf, .docx
+            </Typography>
+            <Button variant="outlined" component="label" sx={{ textTransform: "none" }}>
+              {uploadingFieldId === field.id ? "Uploading..." : "Upload file"}
+              <input
+                hidden
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(event) => handleFileChange(field.id, event.target.files?.[0])}
+              />
+            </Button>
+            {values[field.id] ? (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Uploaded: {values[field.id].split("/").pop()}
+              </Typography>
+            ) : null}
+          </Box>
+          {fieldError ? (
+            <Typography variant="caption" color="error.main">
+              {fieldError}
+            </Typography>
+          ) : null}
+        </Stack>
+      );
     }
 
     if (fieldType === "TEXTAREA") {
@@ -176,21 +237,12 @@ export default function PublicApplyPage() {
 
   const handleSubmit = async () => {
     if (!job || !publicToken) return;
+    setSubmitAttempted(true);
     if (!validateForm()) return;
-
-    const inferred = inferCandidateCoreFields(job.fields, values);
-    if (!inferred.candidateName || !inferred.candidateEmail) {
-      toast.error("Form must include name and email fields.");
-      return;
-    }
 
     try {
       setSubmitting(true);
-      await axios.post(`${API_BASE_URL}/public/jobs/${publicToken}/apply`, {
-        candidate_name: inferred.candidateName,
-        candidate_email: inferred.candidateEmail,
-        candidate_phone: inferred.candidatePhone || undefined,
-        resume_url: inferred.resumeUrl || undefined,
+      await api.post(`/public/jobs/${publicToken}/apply`, {
         responses: job.fields.map((field) => ({
           field_id: field.id,
           value: values[field.id] || "",
@@ -204,6 +256,8 @@ export default function PublicApplyPage() {
           return acc;
         }, {})
       );
+      setTouched({});
+      setSubmitAttempted(false);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to submit application");
     } finally {
@@ -247,23 +301,25 @@ export default function PublicApplyPage() {
         </Paper>
 
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-            Job Description
-          </Typography>
-          <Box dangerouslySetInnerHTML={{ __html: job.jd_content || "<p>-</p>" }} />
-        </Paper>
+          <Tabs
+            value={activeTab}
+            onChange={(_, nextValue: "jd" | "form") => setActiveTab(nextValue)}
+            sx={{ mb: 2 }}
+          >
+            <Tab value="jd" label="Job Description" />
+            <Tab value="form" label="Application Form" />
+          </Tabs>
 
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-            Application Form
-          </Typography>
-
-          {job.is_expired ? (
+          {activeTab === "jd" ? (
+            <Box sx={{ maxHeight: "60vh", overflowY: "auto", pr: 1 }}>
+              <Box dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(job.jd_content) || "<p>-</p>" }} />
+            </Box>
+          ) : job.is_expired ? (
             <Alert severity="warning">This application link has expired.</Alert>
           ) : (
-            <Stack spacing={2}>
+            <Stack spacing={2} sx={{ maxHeight: "60vh", overflowY: "auto", pr: 1 }}>
               {job.fields.map((field) => (
-                <Box key={field.id}>{renderField(field)}</Box>
+                <Box sx={{ pt:1 }} key={field.id}>{renderField(field)}</Box>
               ))}
               <Box>
                 <Button

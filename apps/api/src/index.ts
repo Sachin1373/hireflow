@@ -3,6 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import 'express-async-errors'
 import cookieParser from "cookie-parser";
+import path from "path";
 import authRoutes from '../src/routes/auth.route';
 import reviewersRoute from "../src/routes/reviewer.route"
 import userRoutes from "../src/routes/users.route"
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 3001
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }))
 app.use(express.json())
 app.use(cookieParser());
+app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
