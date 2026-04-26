@@ -23,19 +23,31 @@ type Props = {
   jobId?: string | null;
   data: JobMetaDataType;
   setData: (data: JobMetaDataType) => void;
+  onJobCreated: (jobId: string) => void;
   registerSave: (fn: () => Promise<boolean>) => void;
 };
 
-const JobMetaData = ({ jobId, data, setData, registerSave }: Props) => {
+const JobMetaData = ({ jobId, data, setData, onJobCreated, registerSave }: Props) => {
   useEffect(() => {
     registerSave(async () => {
+      if (!data.title || !data.description || !data.jd_content) {
+        toast.error("Title, description and JD are required");
+        return false;
+      }
+
       try {
-        if (jobId) {
+        if (!jobId) {
+          const res = await api.post("/jobs/create", data);
+          const createdJobId = res?.data?.data?.id;
+          if (!createdJobId) {
+            toast.error("Job created but id not returned");
+            return false;
+          }
+          onJobCreated(createdJobId);
+          toast.success("Job draft created");
+        } else {
           await api.patch(`/jobs/${jobId}`, data);
           toast.success("Job details updated");
-        } else {
-          await api.post('/jobs/create', data);
-          toast.success("Job draft created");
         }
         return true;
       } catch (err) {
@@ -44,7 +56,7 @@ const JobMetaData = ({ jobId, data, setData, registerSave }: Props) => {
         return false;
       }
     });
-  }, [data, jobId]);
+  }, [data, jobId, onJobCreated, registerSave]);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <TextField

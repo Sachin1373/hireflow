@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { createFormFields, getFormFieldsByJobId } from "../../repository/formFields/formFields.repo";
+import { getJobStatusById } from "../../repository/jobs/jobs.repo";
 
 export const SaveFormFields = async (req: Request, res: Response) => {
   try {
@@ -9,6 +10,15 @@ export const SaveFormFields = async (req: Request, res: Response) => {
     
     if (!job_id) {
        return res.status(400).json({ message: "Job ID required" });
+    }
+
+    const existingJob = await getJobStatusById(job_id as string, org_id);
+    if (!existingJob) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    if (existingJob.status === "submitted") {
+      return res.status(400).json({ message: "Submitted jobs cannot be edited" });
     }
 
     const savedFields = await createFormFields(org_id as string, job_id as string, fields || []);

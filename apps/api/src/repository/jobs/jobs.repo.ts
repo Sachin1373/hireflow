@@ -1,4 +1,5 @@
 import pool from "../../db/client";
+import crypto from "crypto";
 
 type CreateJobInput = {
   title: string;
@@ -16,13 +17,22 @@ type AssignJobReviewersResult = {
   assignedCount: number;
 };
 
+export const getJobStatusById = async (id: string, org_id: string) => {
+  const res = await pool.query(
+    "SELECT id, status FROM jobs WHERE id = $1 AND org_id = $2",
+    [id, org_id]
+  );
+  return res.rows[0] || null;
+};
+
 export const jobCreation = async (data: CreateJobInput, user_id: string,  org_id: string) => {
+  const slug = `job_${crypto.randomBytes(12).toString("hex")}`;
   const res = await pool.query(
     `INSERT INTO jobs 
-  (title, description, jd_content, user_id, org_id)
-  VALUES ($1, $2, $3, $4, $5)
+  (title, description, jd_content, user_id, org_id, slug)
+  VALUES ($1, $2, $3, $4, $5, $6)
   RETURNING *;`,
-    [data.title, data.description, data.jd_content, user_id, org_id],
+    [data.title, data.description, data.jd_content, user_id, org_id, slug],
   );
   return res.rows[0];
 };
@@ -67,6 +77,14 @@ export const updateJob = async (id: string, data: UpdateJobInput, org_id: string
   
   const res = await pool.query(query, values);
   return res.rows[0];
+};
+
+export const deleteJob = async (id: string, org_id: string) => {
+  const res = await pool.query(
+    "DELETE FROM jobs WHERE id = $1 AND org_id = $2 RETURNING id",
+    [id, org_id]
+  );
+  return res.rows[0] || null;
 };
 
 
@@ -170,5 +188,32 @@ export const assignJobReviewers = async (
   } finally {
     client.release();
   }
+};
+
+export const getPublicJobBySlug = async (slug: string) => {
+  const jobRes = await pool.query(
+    `SELECT id, org_id, title, description, jd_content, form_expires_at, status
+     FROM jobs
+     WHERE slug = $1`,
+    [slug]
+  );
+
+  if (jobRes.rowCount === 0) {
+    return null;
+  }
+
+  const job = jobRes.rows[0];
+  const fieldsRes = await pool.query(
+    `SELECT id, field_type, label, required, position, options, placeholder
+     FROM form_fields
+     WHERE job_id = $1
+     ORDER BY position ASC`,
+    [job.id]
+  );
+
+  return {
+    ...job,
+    fields: fieldsRes.rows,
+  };
 };
 

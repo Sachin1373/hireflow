@@ -15,12 +15,13 @@ type Props = {
   jobId?: string | null;
   data: FormField[];
   setData: (data: FormField[]) => void;
+  onDirty: () => void;
   registerSave: (fn: () => Promise<boolean>) => void;
 };
 
 const FIELD_TYPES = ["TEXT", "EMAIL", "FILE", "NUMBER", "DATE", "SELECT"];
 
-const ApplicationForm = ({ jobId, data, setData, registerSave }: Props) => {
+const ApplicationForm = ({ jobId, data, setData, onDirty, registerSave }: Props) => {
   const [fields, setFields] = useState<FormField[]>(() => {
     if (data && data.length > 0) return data;
     return [
@@ -65,18 +66,21 @@ const ApplicationForm = ({ jobId, data, setData, registerSave }: Props) => {
 
   const addField = () => {
     setFields([...fields, { field_type: "TEXT", label: "", required: false }]);
+    onDirty();
   };
 
   const removeField = (index: number) => {
     const newFields = [...fields];
     newFields.splice(index, 1);
     setFields(newFields);
+    onDirty();
   };
 
   const updateField = (index: number, key: keyof FormField, value: any) => {
     const newFields = [...fields];
     newFields[index] = { ...newFields[index], [key]: value };
     setFields(newFields);
+    onDirty();
   };
 
   return (

@@ -9,6 +9,7 @@ import SignUp from "@/Pages/Auth/SignUp";
 import Login from "@/Pages/Auth/Login";
 import RequireAuth from "@/Components/RequireAuth";
 import CreateNewJob from "@/Pages/Jobs/CreateNewJob";
+import PublicApplyPage from "@/Pages/PublicApply";
 
 export const router = createBrowserRouter([
   {
@@ -48,5 +49,9 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/apply/:publicToken",
+    element: <PublicApplyPage />,
   },
 ]);

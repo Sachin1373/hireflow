@@ -5,6 +5,8 @@ import {
   getJobById,
   updateJob,
   assignJobReviewers,
+  deleteJob,
+  getJobStatusById,
 } from "../../repository/jobs/jobs.repo";
 
 export const CreateJob = async (req: Request, res: Response) => {
@@ -94,6 +96,15 @@ export const UpdateJob = async (req: Request, res: Response) => {
        return res.status(400).json({ message: "Job ID required" });
     }
 
+    const existingJob = await getJobStatusById(id as string, org_id);
+    if (!existingJob) {
+      return res.status(404).json({ message: "Job not found or nothing to update" });
+    }
+
+    if (existingJob.status === "submitted") {
+      return res.status(400).json({ message: "Submitted jobs cannot be edited" });
+    }
+
     const job = await updateJob(id as string, data, org_id);
     if (!job) {
        return res.status(404).json({ message: "Job not found or nothing to update" });
@@ -105,6 +116,27 @@ export const UpdateJob = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+export const DeleteJob = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { org_id } = (req as any).user;
+
+    if (!id) {
+      return res.status(400).json({ message: "Job ID required" });
+    }
+
+    const deleted = await deleteJob(id as string, org_id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Job deleted successfully" });
+  } catch (error) {
+    console.error("DeleteJob error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const SaveJobReviewers = async (req: Request, res: Response) => {
   try {
@@ -118,6 +150,15 @@ export const SaveJobReviewers = async (req: Request, res: Response) => {
 
     if (!Array.isArray(reviewerIds)) {
       return res.status(400).json({ message: "Reviewer IDs must be an array" });
+    }
+
+    const existingJob = await getJobStatusById(job_id as string, org_id);
+    if (!existingJob) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    if (existingJob.status === "submitted") {
+      return res.status(400).json({ message: "Submitted jobs cannot be edited" });
     }
 
     const result = await assignJobReviewers(job_id as string, reviewerIds, org_id);

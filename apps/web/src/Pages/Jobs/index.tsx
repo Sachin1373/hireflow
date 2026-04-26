@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  Stack,
-  Chip,
-} from "@mui/material";
+import { Box, Typography, Button, Stack, Chip } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -13,9 +7,18 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SearchBar from "@/Components/SearchBar";
 import CustomTable from "@/Components/CustomTable";
 import ActionMenu from "@/Components/ActionMenu";
+import ConfirmDialog from "@/Components/ConfirmDialog";
 import api from "@/axiosInstance";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
+import { toast } from "react-toastify";
+
+type JobRow = {
+  id: string;
+  title: string;
+  status?: string;
+  created_at?: string;
+};
 
 export default function JobsPage() {
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -24,7 +27,10 @@ export default function JobsPage() {
   const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<JobRow | null>(null);
   const limit = 10;
 
   const canWrite =
@@ -34,7 +40,9 @@ export default function JobsPage() {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/jobs/list?page=${page}&limit=${limit}&search=${searchQuery}`);
+      const res = await api.get(
+        `/jobs/list?page=${page}&limit=${limit}&search=${searchQuery}`,
+      );
       setJobs(res.data.data);
       if (res.data.pagination) {
         setTotal(res.data.pagination.total);
@@ -51,23 +59,53 @@ export default function JobsPage() {
   }, [page, searchQuery]);
 
   const handleCreateJob = () => {
-    navigate('/dashboard/jobs/new')
-  }
+    navigate("/dashboard/jobs/new");
+  };
+
+  const handleEdit = (job: JobRow) => {
+    navigate(`/dashboard/jobs/new?jobId=${job.id}`);
+  };
+
+  const handleOpenDeleteDialog = (job: JobRow) => {
+    setJobToDelete(job);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteJob = async () => {
+    if (!jobToDelete) return;
+    try {
+      setDeleteLoading(true);
+      await api.delete(`/jobs/${jobToDelete.id}`);
+      toast.success("Job deleted successfully");
+      setDeleteDialogOpen(false);
+      setJobToDelete(null);
+      fetchJobs();
+    } catch (error: any) {
+      console.error("Delete job error:", error);
+      toast.error(error?.response?.data?.message || "Failed to delete job");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const columns = [
     {
       field: "title",
       headerName: "Title",
-      render: (row: any) => (
-        <Typography 
-          variant="body2" 
-          sx={{ 
+      render: (row: JobRow) => (
+        <Typography
+          variant="body2"
+          sx={{
             fontWeight: "600",
-            cursor: row.status === 'draft' || !row.status ? 'pointer' : 'default',
-            color: row.status === 'draft' || !row.status ? 'primary.main' : 'inherit'
+            cursor:
+              row.status === "draft" || !row.status ? "pointer" : "default",
+            color:
+              row.status === "draft" || !row.status
+                ? "primary.main"
+                : "inherit",
           }}
           onClick={() => {
-            if (row.status === 'draft' || !row.status) {
+            if (row.status === "draft" || !row.status) {
               navigate(`/dashboard/jobs/new?jobId=${row.id}`);
             }
           }}
@@ -79,13 +117,13 @@ export default function JobsPage() {
     {
       field: "status",
       headerName: "Status",
-      render: (row: any) => (
+      render: (row: JobRow) => (
         <Chip
-          label={row.status || 'Draft'}
+          label={row.status || "Draft"}
           size="small"
           sx={{
             borderRadius: "6px",
-            bgcolor: row.status === 'active' ? 'success.main' : 'black',
+            bgcolor: row.status === "active" ? "success.main" : "black",
             color: "white",
           }}
         />
@@ -94,7 +132,7 @@ export default function JobsPage() {
     {
       field: "created_at",
       headerName: "Created At",
-      render: (row: any) => (
+      render: (row: JobRow) => (
         <Typography variant="body2" color="text.secondary">
           {row.created_at ? new Date(row.created_at).toLocaleDateString() : ""}
         </Typography>
@@ -104,28 +142,28 @@ export default function JobsPage() {
       field: "actions",
       headerName: "",
       align: "right" as const,
-      render: (row: any) => (
-        <ActionMenu
-          actions={[
-            {
-              label: "Edit",
-              icon: <EditIcon fontSize="small" />,
-              onClick: () => {
-                // To be implemented
-              },
-            },
-            {
-              label: "Delete",
-              icon: <DeleteIcon fontSize="small" />,
-              onClick: () => {
-                 // To be implemented
-              },
-              color: "#d32f2f",
-              dividerBefore: true,
-            },
-          ]}
-        />
-      ),
+
+      render: (row: JobRow) => {
+        const actions = [];
+
+        if (row.status !== "submitted") {
+          actions.push({
+            label: "Edit",
+            icon: <EditIcon fontSize="small" />,
+            onClick: () => handleEdit(row),
+          });
+        }
+
+        actions.push({
+          label: "Delete",
+          icon: <DeleteIcon fontSize="small" />,
+          onClick: () => handleOpenDeleteDialog(row),
+          color: "#d32f2f",
+          dividerBefore: true,
+        });
+
+        return <ActionMenu actions={actions} />;
+      },
     },
   ];
 
@@ -192,6 +230,20 @@ export default function JobsPage() {
         onPageChange={setPage}
       />
 
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete Job"
+        description={`Are you sure you want to delete "${jobToDelete?.title || "this job"}"? This action cannot be undone.`}
+        loading={deleteLoading}
+        onClose={() => {
+          if (deleteLoading) return;
+          setDeleteDialogOpen(false);
+          setJobToDelete(null);
+        }}
+        onConfirm={handleDeleteJob}
+        confirmText="Delete"
+        confirmColor="error"
+      />
     </Box>
-  )
+  );
 }
