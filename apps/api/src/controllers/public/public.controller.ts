@@ -108,7 +108,7 @@ export const SubmitPublicApplication = async (req: Request, res: Response) => {
         errors: parsed.error.flatten(),
       });
     }
-
+    
     const job = await getPublicJobBySlug(token);
     if (!job) {
       return res.status(404).json({ message: "Invalid application link" });

@@ -61,15 +61,25 @@ export default function PublicApplyPage() {
         const payload: PublicJobPayload = response.data.data;
         setJob(payload);
 
-        const initialValues = payload.fields.reduce<Record<string, string>>((acc, field) => {
-          acc[field.id] = "";
-          return acc;
-        }, {});
+        const initialValues = payload.fields.reduce<Record<string, string>>(
+          (acc, field) => {
+            acc[field.id] = "";
+            return acc;
+          },
+          {},
+        );
         setValues(initialValues);
         setTouched({});
         setSubmitAttempted(false);
       } catch (error: any) {
-        setErrorState(error?.response?.data?.message || "Unable to open this application link.");
+        if (error.response?.status === 410) {
+          setErrorState("This application link has expired.");
+        } else {
+          setErrorState(
+            error?.response?.data?.message ||
+              "Unable to open this application link.",
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -169,7 +179,13 @@ export default function PublicApplyPage() {
     }
 
     if (fieldType === "DATE") {
-      return <TextField type="date" InputLabelProps={{ shrink: true }} {...commonProps} />;
+      return (
+        <TextField
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          {...commonProps}
+        />
+      );
     }
 
     if (fieldType === "NUMBER") {
@@ -204,13 +220,19 @@ export default function PublicApplyPage() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Supported formats: .pdf, .docx
             </Typography>
-            <Button variant="outlined" component="label" sx={{ textTransform: "none" }}>
+            <Button
+              variant="outlined"
+              component="label"
+              sx={{ textTransform: "none" }}
+            >
               {uploadingFieldId === field.id ? "Uploading..." : "Upload file"}
               <input
                 hidden
                 type="file"
                 accept=".pdf,.doc,.docx"
-                onChange={(event) => handleFileChange(field.id, event.target.files?.[0])}
+                onChange={(event) =>
+                  handleFileChange(field.id, event.target.files?.[0])
+                }
               />
             </Button>
             {values[field.id] ? (
@@ -239,7 +261,7 @@ export default function PublicApplyPage() {
     if (!job || !publicToken) return;
     setSubmitAttempted(true);
     if (!validateForm()) return;
-
+    
     try {
       setSubmitting(true);
       await api.post(`/public/jobs/${publicToken}/apply`, {
@@ -254,12 +276,14 @@ export default function PublicApplyPage() {
         job.fields.reduce<Record<string, string>>((acc, field) => {
           acc[field.id] = "";
           return acc;
-        }, {})
+        }, {}),
       );
       setTouched({});
       setSubmitAttempted(false);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to submit application");
+      toast.error(
+        error?.response?.data?.message || "Failed to submit application",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -312,14 +336,23 @@ export default function PublicApplyPage() {
 
           {activeTab === "jd" ? (
             <Box sx={{ maxHeight: "60vh", overflowY: "auto", pr: 1 }}>
-              <Box dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(job.jd_content) || "<p>-</p>" }} />
+              <Box
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(job.jd_content) || "<p>-</p>",
+                }}
+              />
             </Box>
           ) : job.is_expired ? (
             <Alert severity="warning">This application link has expired.</Alert>
           ) : (
-            <Stack spacing={2} sx={{ maxHeight: "60vh", overflowY: "auto", pr: 1 }}>
+            <Stack
+              spacing={2}
+              sx={{ maxHeight: "60vh", overflowY: "auto", pr: 1 }}
+            >
               {job.fields.map((field) => (
-                <Box sx={{ pt:1 }} key={field.id}>{renderField(field)}</Box>
+                <Box sx={{ pt: 1 }} key={field.id}>
+                  {renderField(field)}
+                </Box>
               ))}
               <Box>
                 <Button

@@ -2,8 +2,10 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/Sachin1373/hireflow/worker/internal/db"
+	"github.com/Sachin1373/hireflow/worker/internal/jobs"
 	"github.com/joho/godotenv"
 )
 
@@ -16,4 +18,14 @@ func main() {
 	db.Connect()
 
 	log.Println("Worker started")
+
+	for {
+		err := jobs.ProcessExpiredJobs()
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		time.Sleep(1 * time.Minute)
+	}
 }

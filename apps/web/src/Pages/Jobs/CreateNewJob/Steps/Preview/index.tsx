@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "@/axiosInstance";
 import CustomTable from "@/Components/CustomTable";
+import dayjs from "dayjs";
 
 type Reviewer = {
   id: string;
@@ -103,10 +104,15 @@ const Preview = ({ data, jobId, registerSubmit }: Props) => {
       return;
     }
 
+    console.log("Selected local datetime:", expiryAt);
+
+    const isoDate = dayjs(expiryAt).toISOString();
+  console.log("Converted UTC ISO:", isoDate);
+    
     try {
       setSubmitting(true);
       await api.patch(`/jobs/${jobId}`, {
-        exp: new Date(expiryAt).toISOString(),
+        exp: dayjs(expiryAt).toISOString(),
         status: "submitted",
       });
       toast.success("Job submitted successfully");

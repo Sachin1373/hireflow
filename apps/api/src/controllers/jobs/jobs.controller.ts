@@ -50,7 +50,6 @@ export const GetAllJobs = async (req: Request, res: Response) => {
     const search = (req.query.search as string) || "";
 
     const result = await getAllJobs(org_id, page, limit, search);
-    console.log('result :', result)
     return res.status(200).json({
       success: true,
       data: result.jobs,

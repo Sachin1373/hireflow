@@ -85,7 +85,6 @@ export default function CreateNewJob() {
     const handler = stepHandlers.current[currentStep];
     const isDone = isStepDone(currentStep);
     if (!isDone && handler) {
-      console.log('inside')
       const success = await handler();
       if (!success) return;
       if (currentStep <= 2) {

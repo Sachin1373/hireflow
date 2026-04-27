@@ -18,7 +18,7 @@ type ApplicationRow = {
   candidate_email: string;
   candidate_phone?: string;
   status: string;
-  created_at: string;
+  applied_at: string;
   assigned_reviewer_count?: number;
 };
 
@@ -34,7 +34,6 @@ export const Responses = () => {
   const { jobId } = useParams();
   const [job, setJob] = useState<JobDetails | null>(null);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
-  console.log('job :', job)
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [page, setPage] = useState<number>(1);
@@ -180,7 +179,7 @@ export const Responses = () => {
           color="text.secondary"
         >
           {new Date(
-            row.created_at
+            row.applied_at
           ).toLocaleDateString()}
         </Typography>
       ),
