@@ -8,8 +8,8 @@ import {
   DeleteReviewerService,
   AssignReviewersToJob,
 } from "../../repository/reviewers/reviewers.repo";
-
-// ... (previous logic)
+import { sendEmail } from "../../services/email/sendEmail";
+import { inviteUserTemplate } from "../../services/email/templates/inviteUserTemplate";
 
 export const DeleteReviewer = async (req: Request, res: Response) => {
   try {
@@ -48,9 +48,11 @@ export const UpdateReviewer = async (req: Request, res: Response) => {
     const data = req.body;
 
     const updatedReviewer = await UpdateUser(id as string, org_id, data);
-    
+
     if (!updatedReviewer) {
-      return res.status(404).json({ message: "Reviewer not found or nothing to update" });
+      return res
+        .status(404)
+        .json({ message: "Reviewer not found or nothing to update" });
     }
 
     res.json({
@@ -72,9 +74,9 @@ type ReviewerCSVRow = {
 
 export const CreateReviewer = async (req: Request, res: Response) => {
   try {
-    const { name, email, designation, password } = req.body;
+    const { name, email, designation } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email) {
       return res.status(400).json({
         message: "Name, email and password are required",
       });
@@ -87,8 +89,10 @@ export const CreateReviewer = async (req: Request, res: Response) => {
       });
     }
 
+    const tempPassword = Math.random().toString(36).slice(-8) + "@A1";
+
     const { org_id, id: created_by } = (req as any).user;
-    const hashPassword = await bcrypt.hash(password, 10);
+    const hashPassword = await bcrypt.hash(tempPassword, 10);
 
     const reviewer = await CreateReviewerService({
       name,
@@ -96,7 +100,17 @@ export const CreateReviewer = async (req: Request, res: Response) => {
       designation,
       created_by,
       org_id,
-      password: hashPassword
+      password: hashPassword,
+    });
+
+    await sendEmail({
+      to: email,
+      subject: "Your HireFlow Account",
+      html: inviteUserTemplate({
+        firstName: name,
+        email,
+        tempPassword,
+      }),
     });
 
     return res.status(201).json({
@@ -142,16 +156,18 @@ export const BulkUploadReviewers = async (req: Request, res: Response) => {
       skip_empty_lines: true,
       trim: true,
     }) as ReviewerCSVRow[];
-    
+
     const errors: any[] = [];
     let successCount = 0;
-
 
     for (let i = 0; i < records.length; i++) {
       const { name, email, designation, password } = records[i];
 
       if (!name || !email || !password) {
-        errors.push({ row: i + 2, error: "Name, email, and password are required" });
+        errors.push({
+          row: i + 2,
+          error: "Name, email, and password are required",
+        });
         continue;
       }
 
@@ -166,9 +182,10 @@ export const BulkUploadReviewers = async (req: Request, res: Response) => {
         errors.push({ row: i + 2, error: "Email already exists" });
         continue;
       }
+      const tempPassword = Math.random().toString(36).slice(-8) + "@A1";
 
       const { org_id, id: created_by } = (req as any).user;
-      const hashPassword = await bcrypt.hash(password, 10);
+      const hashPassword = await bcrypt.hash(tempPassword, 10);
 
       const newReviewer = {
         name,
@@ -176,11 +193,21 @@ export const BulkUploadReviewers = async (req: Request, res: Response) => {
         designation,
         created_by,
         org_id,
-        password: hashPassword
-      }
-      await CreateReviewerService(newReviewer)
+        password: hashPassword,
+      };
+      await CreateReviewerService(newReviewer);
 
       successCount++;
+
+      await sendEmail({
+        to: email,
+        subject: "Your HireFlow Account",
+        html: inviteUserTemplate({
+          firstName: name,
+          email,
+          tempPassword,
+        }),
+      });
     }
     return res.json({
       successCount,

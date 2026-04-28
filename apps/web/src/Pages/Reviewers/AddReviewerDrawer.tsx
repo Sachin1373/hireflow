@@ -15,7 +15,6 @@ type FormInputs = {
   name: string;
   email: string;
   designation: string;
-  password?: string;
 };
 
 export default function AddReviewerDrawer({ open, onClose, initialData }: Props) {
@@ -33,7 +32,6 @@ export default function AddReviewerDrawer({ open, onClose, initialData }: Props)
              name: "",
              email: "",
              designation: "",
-             password: ""
          });
      }
   }, [initialData, reset, open]);
@@ -41,8 +39,7 @@ export default function AddReviewerDrawer({ open, onClose, initialData }: Props)
   const onSubmit = async(data: FormInputs) => {
     try {
       if (initialData) {
-        const { password, ...payload } = data;
-        await api.patch(`/reviewer/${initialData.id}`, payload);
+        await api.patch(`/reviewer/${initialData.id}`, data);
         toast.success("Reviewer updated successfully");
       } else {
         await api.post('/reviewer/create', data)
@@ -109,21 +106,6 @@ export default function AddReviewerDrawer({ open, onClose, initialData }: Props)
             helperText={errors.designation?.message}
             {...register("designation", { required: "Designation is required" })}
           />
-
-          {!initialData && (
-            <TextField
-              label="Initial Password"
-              fullWidth
-              size="small"
-              type="password"
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              {...register("password", { 
-                  required: "Initial password is required",
-                  minLength: { value: 6, message: "Min 6 characters" }
-              })}
-            />
-          )}
 
           <Box className="pt-4 flex gap-3">
             <Button 

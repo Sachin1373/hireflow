@@ -1,13 +1,13 @@
 package jobs
 
 import (
-	"fmt"
 	"log"
+
+	"github.com/Sachin1373/hireflow/worker/internal/db"
 )
 
 func ProcessExpiredJobs() error {
 	jobIDs, err := GetExpiredJobs()
-	fmt.Println("jobIDs :", jobIDs)
 	if err != nil {
 		return err
 	}
@@ -21,18 +21,31 @@ func ProcessExpiredJobs() error {
 		if err != nil {
 			log.Fatal("error fetching applications")
 		}
-		log.Println("processing appIds:", appIds)
 		// fetch reviewers
 		reviewerIds, err := GetReviewers(jobID)
 		if err != nil {
 			log.Fatal("error fetching reviewerIds")
 		}
-		log.Println("processing reviewerIds:", reviewerIds)
 		// assign equally
 		assignments := distribute(appIds, reviewerIds)
-		fmt.Println("assignments :", assignments)
 		// save assignments
+		err = AssignReviewers(assignments, jobID)
+		if err != nil {
+			log.Println("error assigning reviewers:", err)
+			continue
+		}
+
 		// mark processed
+		_, err = db.DB.Exec(`
+			UPDATE jobs
+			SET assignment_processed = true
+			WHERE id = $1
+		`, jobID)
+
+		if err != nil {
+			log.Println("error marking job processed:", err)
+			continue
+		}
 	}
 
 	return nil

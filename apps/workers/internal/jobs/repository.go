@@ -93,4 +93,27 @@ func GetReviewers(job_id string) ([]string, error) {
 	}
 
 	return reviewersIDs, nil
-} 
+}
+
+func AssignReviewers(assignments map[string][]string, jobID string) error {
+	for reviewerID, applicationIDs := range assignments {
+
+		for _, applicationID := range applicationIDs {
+
+			_, err := db.DB.Exec(`
+				INSERT INTO assignments (
+					application_id,
+					reviewer_id,
+					job_id
+				)
+				VALUES ($1, $2, $3)
+			`, applicationID, reviewerID, jobID)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
