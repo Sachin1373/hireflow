@@ -104,10 +104,8 @@ const Preview = ({ data, jobId, registerSubmit }: Props) => {
       return;
     }
 
-    console.log("Selected local datetime:", expiryAt);
 
     const isoDate = dayjs(expiryAt).toISOString();
-  console.log("Converted UTC ISO:", isoDate);
     
     try {
       setSubmitting(true);

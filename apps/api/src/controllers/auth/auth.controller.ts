@@ -68,7 +68,7 @@ export const Login = async (req: Request, res: Response) => {
         message: "User not found",
       });
     }
-
+    
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {

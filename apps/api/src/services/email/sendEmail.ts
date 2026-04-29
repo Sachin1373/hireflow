@@ -19,7 +19,6 @@ export const sendEmail = async ({
       html,
     });
 
-    console.log("Email sent:", info.messageId);
 
     return info;
   } catch (error) {

@@ -7,11 +7,13 @@ export default function MainLayout() {
   const user = useSelector((state: RootState) => state.auth.user);
 
   const navItems = [
-    { label: "Dashboard", path: "/dashboard", roles: ["ADMIN", "HR", "REVIEWER"] },
+    { label: "Dashboard", path: "/dashboard", roles: ["ADMIN", "HR"] },
     { label: "Jobs", path: "/dashboard/jobs", roles: ["ADMIN", "HR"] },
     { label: "Applications", path: "/dashboard/applications", roles: ["ADMIN", "HR"] },
     { label: "Reviewers", path: "/dashboard/reviewers", roles: ["ADMIN", "HR"] },
     { label: "Users", path: "/dashboard/users", roles: ["ADMIN", "HR"] },
+    { label: "Applications", path: "/reviewer-dashboard/application", roles: ["REVIEWER"] },
+    { label: "Setting", path: "/reviewer-dashboard/setting", roles: ["REVIEWER"] },
   ];
 
   const filteredItems = navItems.filter((item) => 

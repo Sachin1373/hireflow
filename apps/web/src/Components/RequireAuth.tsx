@@ -9,6 +9,14 @@ export default function RequireAuth({ allowedRoles }: { allowedRoles?: string[] 
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user.role === "REVIEWER") {
+      return (
+        <Navigate
+          to="/reviewer-dashboard/application"
+          replace
+        />
+      );
+    }
     return <Navigate to="/dashboard" replace />;
   }
 

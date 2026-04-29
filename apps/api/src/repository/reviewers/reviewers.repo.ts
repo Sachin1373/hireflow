@@ -1,4 +1,4 @@
-import pool from "../../db/client"
+import pool from "../../db/client";
 
 type CreateReviewerInput = {
   name: string;
@@ -14,26 +14,30 @@ type GetReviewersInput = {
   search?: string;
   org_id: string;
 };
-export const CreateReviewerService = async(data: CreateReviewerInput) => {
-    const { name, email, designation, created_by, org_id, password } = data;
-    const res = await pool.query(
-      `
+export const CreateReviewerService = async (data: CreateReviewerInput) => {
+  const { name, email, designation, created_by, org_id, password } = data;
+  const res = await pool.query(
+    `
       INSERT INTO users (first_name, email, designation, created_by, org_id, role, password_hash)
       VALUES ($1, $2, $3, $4, $5, 'REVIEWER', $6)
       RETURNING *, first_name as name;
       `,
-      [name, email, designation || null, created_by, org_id, password || null]
-    );
+    [name, email, designation || null, created_by, org_id, password || null],
+  );
 
-    return res.rows[0];
-}
+  return res.rows[0];
+};
 
+export const checkReviewerAlreadyExists = async (
+  email: string,
+): Promise<boolean> => {
+  const res = await pool.query(
+    "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1) AS exists",
+    [email],
+  );
 
-export const checkReviewerAlreadyExists = async(email: string):Promise<boolean> => {
-    const res = await pool.query("SELECT EXISTS (SELECT 1 FROM users WHERE email = $1) AS exists", [email])
-
-    return res.rows[0].exists
-}
+  return res.rows[0].exists;
+};
 
 export const getReviewers = async ({
   page,
@@ -41,7 +45,6 @@ export const getReviewers = async ({
   search,
   org_id,
 }: GetReviewersInput) => {
- 
   const offset = (page - 1) * limit;
   let baseQuery = `
     FROM users
@@ -60,10 +63,7 @@ export const getReviewers = async ({
     index++;
   }
 
-  const countRes = await pool.query(
-    `SELECT COUNT(*) ${baseQuery}`,
-    values
-  );
+  const countRes = await pool.query(`SELECT COUNT(*) ${baseQuery}`, values);
 
   const total = Number(countRes.rows[0].count);
 
@@ -92,33 +92,91 @@ export const getReviewers = async ({
 export const DeleteReviewerService = async (id: string) => {
   const res = await pool.query(
     "DELETE FROM users WHERE id = $1 AND role = 'REVIEWER' RETURNING *",
-    [id]
+    [id],
   );
   return res.rows[0];
 };
 
-export const AssignReviewersToJob = async (jobId: string, reviewerIds: string[], org_id: string) => {
+export const AssignReviewersToJob = async (
+  jobId: string,
+  reviewerIds: string[],
+  org_id: string,
+) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    
+    await client.query("BEGIN");
+
     // Clear existing links
-    await client.query('DELETE FROM reviewer_links WHERE job_id = $1', [jobId]);
+    await client.query("DELETE FROM reviewer_links WHERE job_id = $1", [jobId]);
 
     // Insert new links
     for (const rid of reviewerIds) {
       await client.query(
-        'INSERT INTO reviewer_links (job_id, reviewer_id, org_id) VALUES ($1, $2, $3)',
-        [jobId, rid, org_id]
+        "INSERT INTO reviewer_links (job_id, reviewer_id, org_id) VALUES ($1, $2, $3)",
+        [jobId, rid, org_id],
       );
     }
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     return true;
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
   }
+};
+
+export const getAssignedJobsForReviewer = async (
+  reviewerId: string,
+  page: number = 1,
+  limit: number = 10,
+  search: string = "",
+) => {
+  const offset = (page - 1) * limit;
+
+  let baseQuery = `
+    FROM reviewer_links rl
+    JOIN jobs j ON j.id = rl.job_id
+    WHERE rl.reviewer_id = $1
+  `;
+
+  const values: any[] = [reviewerId];
+
+  if (search) {
+    baseQuery += ` AND j.title ILIKE $2`;
+    values.push(`%${search}%`);
+  }
+
+  const countRes = await pool.query(
+    `SELECT COUNT(DISTINCT j.id) ${baseQuery}`,
+    values,
+  );
+
+  const total = parseInt(countRes.rows[0].count, 10);
+
+  const query = `
+    SELECT DISTINCT
+      j.id,
+      j.title,
+      j.status,
+      j.created_at
+    ${baseQuery}
+    ORDER BY j.created_at DESC
+    LIMIT $${values.length + 1}
+    OFFSET $${values.length + 2}
+  `;
+
+  const res = await pool.query(query, [
+    ...values,
+    limit,
+    offset,
+  ]);
+
+  return {
+    jobs: res.rows,
+    total,
+    page,
+    limit,
+  };
 };
