@@ -3,10 +3,12 @@ package jobs
 import (
 	"log"
 
+	"github.com/Sachin1373/hireflow/worker/internal/config"
 	"github.com/Sachin1373/hireflow/worker/internal/db"
+	"github.com/Sachin1373/hireflow/worker/internal/mailer"
 )
 
-func ProcessExpiredJobs() error {
+func ProcessExpiredJobs(cfg *config.Config) error {
 	jobIDs, err := GetExpiredJobs()
 	if err != nil {
 		return err
@@ -33,6 +35,57 @@ func ProcessExpiredJobs() error {
 		if err != nil {
 			log.Println("error assigning reviewers:", err)
 			continue
+		}
+
+		jobTitle, err := GetJobTitle(jobID)
+
+		if err != nil {
+			log.Println(
+				"error fetching job title:",
+				err,
+			)
+			continue
+		}
+
+		for reviewerIds, apps := range assignments {
+			email, name, err := GetReviewerDetails(reviewerIds)
+
+			if err != nil {
+				log.Println(
+					"error fetching reviewer details:",
+					err,
+				)
+				continue
+			}
+
+			log.Println(
+				"attempting email to:",
+				email,
+			)
+
+			err = mailer.SendReviewAssignmentEmail(
+				cfg,
+				email,
+				name,
+				jobTitle,
+				cfg.CLIENT_URL,
+			)
+
+			if err != nil {
+				log.Printf(
+					"EMAIL SEND FAILED | reviewer=%s | email=%s | err=%v",
+					name,
+					email,
+					err,
+				)
+				continue
+			}
+
+			log.Printf(
+				"email sent to reviewer %s for %d applications",
+				email,
+				len(apps),
+			)
 		}
 
 		// mark processed

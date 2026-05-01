@@ -4,23 +4,24 @@ import (
 	"log"
 	"time"
 
+	"github.com/Sachin1373/hireflow/worker/internal/config"
 	"github.com/Sachin1373/hireflow/worker/internal/db"
 	"github.com/Sachin1373/hireflow/worker/internal/jobs"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load("../../.env")
+	cfg, err := config.Load()
+
 	if err != nil {
-		log.Fatal("Error loading root .env")
+		panic("failed to load config: " + err.Error())
 	}
 
-	db.Connect()
+	db.Connect(cfg)
 
 	log.Println("Worker started")
 
 	for {
-		err := jobs.ProcessExpiredJobs()
+		err := jobs.ProcessExpiredJobs(cfg)
 
 		if err != nil {
 			log.Println(err)

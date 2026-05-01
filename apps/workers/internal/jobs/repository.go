@@ -1,6 +1,8 @@
 package jobs
 
-import "github.com/Sachin1373/hireflow/worker/internal/db"
+import (
+	"github.com/Sachin1373/hireflow/worker/internal/db"
+)
 
 func GetExpiredJobs() ([]string, error) {
 	rows, err := db.DB.Query(`
@@ -116,4 +118,34 @@ func AssignReviewers(assignments map[string][]string, jobID string) error {
 	}
 
 	return nil
+}
+
+func GetJobTitle(job_id string) (string, error) {
+	var title string
+	err := db.DB.QueryRow(`SELECT title FROM jobs WHERE id = $1`, job_id).Scan(&title)
+
+	if err != nil {
+		return "", err
+	}
+
+	return title, nil
+
+}
+
+func GetReviewerDetails(reviewerID string) (string, string, error) {
+	var email string
+	var firstName string
+
+	err := db.DB.QueryRow(`
+		SELECT email, first_name
+		FROM users
+		WHERE id = $1
+	`, reviewerID).
+		Scan(&email, &firstName)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	return email, firstName, nil
 }

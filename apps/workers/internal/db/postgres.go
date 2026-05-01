@@ -3,18 +3,16 @@ package db
 import (
 	"database/sql"
 	"log"
-	"os"
 
+	"github.com/Sachin1373/hireflow/worker/internal/config"
 	_ "github.com/lib/pq"
 )
 
 var DB *sql.DB
 
-func Connect() {
+func Connect(cfg *config.Config) {
 
-	connStr := os.Getenv("DATABASE_URL")
-
-	database, err := sql.Open("postgres", connStr)
+	database, err := sql.Open("postgres", cfg.DATABASE_URL)
 
 	if err != nil {
 		log.Fatal(err)
