@@ -147,7 +147,7 @@ export default function ReviewersPage() {
       headerName: "Designation",
       render: (row: any) => (
         <Chip
-          label={row.designation}
+          label={row.designation || 'N/A'}
           size="small"
           sx={{
             borderRadius: "6px",

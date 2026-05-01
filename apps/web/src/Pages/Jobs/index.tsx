@@ -3,6 +3,7 @@ import { Box, Typography, Button, Stack, Chip } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SearchBar from "@/Components/SearchBar";
@@ -119,13 +120,10 @@ export default function JobsPage() {
             cursor:
               row.status === "draft" || !row.status ? "pointer" : "default",
 
-            color:
-              row.status === "draft" || !row.status
-                ? "primary.main"
-                : "inherit",
+              color: !row.status || String(row.status).toLowerCase() === "draft" ? "primary.main" : "inherit",
           }}
           onClick={() => {
-            if (row.status === "draft" || !row.status) {
+            if (!row.status || String(row.status).toLowerCase() === "draft") {
               navigate(`/dashboard/jobs/new?jobId=${row.id}`);
             }
           }}
@@ -145,8 +143,10 @@ export default function JobsPage() {
           sx={{
             borderRadius: "6px",
 
-            bgcolor: row.status === "active" ? "success.main" : "black",
-
+            bgcolor:
+              String(row.status).toUpperCase() === "PUBLISHED" || String(row.status).toLowerCase() === "active"
+                ? "success.main"
+                : "black",
             color: "white",
           }}
         />
@@ -190,25 +190,26 @@ export default function JobsPage() {
       render: (row: JobRow) => {
         const actions = [];
 
-        if (row.status !== "submitted") {
+        // Details action (available to all)
+        actions.push({
+          label: "Details",
+          icon: <VisibilityIcon fontSize="small" />,
+          onClick: () => navigate(`/dashboard/jobs/${row.id}`),
+        });
+
+        if (!row.status || String(row.status).toLowerCase() === "draft") {
           actions.push({
             label: "Edit",
-
             icon: <EditIcon fontSize="small" />,
-
             onClick: () => handleEdit(row),
           });
         }
 
         actions.push({
           label: "Delete",
-
           icon: <DeleteIcon fontSize="small" />,
-
           onClick: () => handleOpenDeleteDialog(row),
-
           color: "#d32f2f",
-
           dividerBefore: true,
         });
 

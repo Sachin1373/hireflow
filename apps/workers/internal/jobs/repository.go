@@ -117,6 +117,18 @@ func AssignReviewers(assignments map[string][]string, jobID string) error {
 		}
 	}
 
+	// After creating assignments, update the job status to UNDER_REVIEW and calculate review_expires_at
+	_, err := db.DB.Exec(`
+		UPDATE jobs
+		SET status = $2,
+			review_expires_at = CASE WHEN form_expires_at IS NOT NULL THEN (form_expires_at AT TIME ZONE 'UTC') + (COALESCE(review_duration_days, 3) || ' days')::interval ELSE NULL END
+		WHERE id = $1
+	`, jobID, "UNDER_REVIEW")
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

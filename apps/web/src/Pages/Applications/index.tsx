@@ -125,10 +125,8 @@ export default function Applications() {
                       size="small"
                       sx={{
                         textTransform: "capitalize",
-
                         bgcolor:
-                          job.status === "active" ? "success.main" : "black",
-
+                          job.status === "PUBLISHED" ? "success.main" : "black",
                         color: "white",
                       }}
                     />

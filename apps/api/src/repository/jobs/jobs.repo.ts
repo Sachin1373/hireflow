@@ -5,12 +5,14 @@ type CreateJobInput = {
   title: string;
   description: string;
   jd_content: string;
+  review_duration_days?: number;
 };
 
 type UpdateJobInput = Partial<CreateJobInput> & {
   status?: string;
   form_expires_at?: string | null;
   exp?: string | null;
+  review_duration_days?: number | null;
 };
 
 type AssignJobReviewersResult = {
@@ -29,10 +31,10 @@ export const jobCreation = async (data: CreateJobInput, user_id: string,  org_id
   const slug = `job_${crypto.randomBytes(12).toString("hex")}`;
   const res = await pool.query(
     `INSERT INTO jobs 
-  (title, description, jd_content, user_id, org_id, slug)
-  VALUES ($1, $2, $3, $4, $5, $6)
+  (title, description, jd_content, user_id, org_id, slug, review_duration_days)
+  VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 3))
   RETURNING *;`,
-    [data.title, data.description, data.jd_content, user_id, org_id, slug],
+    [data.title, data.description, data.jd_content, user_id, org_id, slug, data.review_duration_days],
   );
   return res.rows[0];
 };
@@ -60,6 +62,12 @@ export const updateJob = async (id: string, data: UpdateJobInput, org_id: string
   if (data.status !== undefined) {
     fields.push(`status = $${index}`);
     values.push(data.status);
+    index++;
+  }
+
+  if (data.review_duration_days !== undefined) {
+    fields.push(`review_duration_days = $${index}`);
+    values.push(data.review_duration_days);
     index++;
   }
 
@@ -127,6 +135,11 @@ export const getJobById = async (id: string, org_id: string) => {
     [id]
   );
   job.reviewers = reviewersRes.rows;
+
+  // ensure numeric default for review_duration_days when not present
+  if (job.review_duration_days === null || job.review_duration_days === undefined) {
+    job.review_duration_days = 3;
+  }
 
   return job;
 }

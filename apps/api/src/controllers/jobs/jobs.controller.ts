@@ -101,9 +101,12 @@ export const UpdateJob = async (req: Request, res: Response) => {
       return res
         .status(404)
         .json({ message: "Job not found or nothing to update" });
-    }
+    } 
 
-    if (existingJob.status === "submitted") {
+    console.log('existingJob :', existingJob)
+
+    const nonEditable = ["submitted", "PUBLISHED", "UNDER_REVIEW", "REVIEW_CLOSED", "COMPLETED", "APPLICATION_CLOSED"];
+    if (nonEditable.includes(existingJob.status)) {
       return res
         .status(400)
         .json({ message: "Submitted jobs cannot be edited" });
@@ -165,7 +168,8 @@ export const SaveJobReviewers = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
-    if (existingJob.status === "submitted") {
+    const nonEditable2 = ["submitted", "PUBLISHED", "UNDER_REVIEW", "REVIEW_CLOSED", "COMPLETED", "APPLICATION_CLOSED"];
+    if (nonEditable2.includes(existingJob.status)) {
       return res
         .status(400)
         .json({ message: "Submitted jobs cannot be edited" });

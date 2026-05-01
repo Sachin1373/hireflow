@@ -1,4 +1,4 @@
-export type JobStatus = 'draft' | 'active' | 'closed'
+export type JobStatus = 'DRAFT' | 'PUBLISHED' | 'APPLICATION_CLOSED' | 'UNDER_REVIEW' | 'REVIEW_CLOSED' | 'COMPLETED' | 'draft' | 'active' | 'closed'
 export type ApplicationStatus = 'applied' | 'shortlisted' | 'rejected' | 'under_review' | 'selected'
 export type ReviewDecision = 'yes' | 'no'
 export type FieldType = 'text' | 'email' | 'phone' | 'number' | 'select' | 'file' | 'textarea'
@@ -18,6 +18,8 @@ export interface Job {
   jd_content: string
   form_expires_at: string
   status: JobStatus
+  review_duration_days?: number
+  review_expires_at?: string
   created_at: string
   slug: string
   org_id: string

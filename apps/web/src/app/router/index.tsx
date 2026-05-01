@@ -9,6 +9,7 @@ import SignUp from "@/Pages/Auth/SignUp";
 import Login from "@/Pages/Auth/Login";
 import RequireAuth from "@/Components/RequireAuth";
 import CreateNewJob from "@/Pages/Jobs/CreateNewJob";
+import JobDetails from "@/Pages/Jobs/JobDetails";
 import PublicApplyPage from "@/Pages/PublicApply";
 import { Responses } from "@/Pages/Applications/Responses";
 import ReviewerApplicationsPage from "@/Pages/ReviewerDashboard/ReviewerApplicationsPage";
@@ -16,57 +17,45 @@ import ReviewApplications from "@/Pages/ReviewerDashboard/ReviewerApplicationsPa
 
 export const router = createBrowserRouter([
   {
-    element: <RequireAuth />,
+    element: <RequireAuth allowedRoles={["ADMIN", "HR", "REVIEWER"]} />,
     children: [
       {
+        path: "/dashboard",
         element: <MainLayout />,
         children: [
+          { index: true, element: <DashboardPage /> },
+
           {
-            path: "/dashboard",
             element: <RequireAuth allowedRoles={["ADMIN", "HR"]} />,
             children: [
               {
-                index: true,
-                element: <DashboardPage />,
-              },
-              {
                 path: "jobs",
                 children: [
-                  {
-                    index: true,
-                    element: <JobsPage />,
-                  },
-                  {
-                    path: "new",
-                    element: <CreateNewJob />,
-                  },
+                  { index: true, element: <JobsPage /> },
+                  { path: "new", element: <CreateNewJob /> },
+                  { path: ":jobId", element: <JobDetails /> },
                 ],
               },
+
               {
                 path: "applications",
                 children: [
-                  {
-                    index: true,
-                    element: <Applications />,
-                  },
-                  {
-                    path: ":jobId",
-                    element: <Responses />,
-                  },
+                  { index: true, element: <Applications /> },
+                  { path: ":jobId", element: <Responses /> },
                 ],
               },
-              {
-                path: "reviewers",
-                element: <ReviewersPage />,
-              },
-              {
-                path: "users",
-                element: <UsersPage />,
-              },
+
+              { path: "reviewers", element: <ReviewersPage /> },
+              { path: "users", element: <UsersPage /> },
             ],
           },
+        ],
+      },
+      {
+        path: "/reviewer-dashboard",
+        element: <MainLayout />,
+        children: [
           {
-            path: "/reviewer-dashboard",
             element: <RequireAuth allowedRoles={["REVIEWER"]} />,
             children: [
               {
@@ -77,11 +66,6 @@ export const router = createBrowserRouter([
                 path: "application/:jobId",
                 element: <ReviewApplications />,
               },
-
-              // {
-              //   path: "setting",
-              //   element: <ReviewerSettingsPage />,
-              // },
             ],
           },
         ],
@@ -89,16 +73,7 @@ export const router = createBrowserRouter([
     ],
   },
 
-  {
-    path: "/signup",
-    element: <SignUp />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/apply/:publicToken",
-    element: <PublicApplyPage />,
-  },
+  { path: "/signup", element: <SignUp /> },
+  { path: "/login", element: <Login /> },
+  { path: "/apply/:publicToken", element: <PublicApplyPage /> },
 ]);

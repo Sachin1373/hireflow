@@ -17,7 +17,8 @@ export const SaveFormFields = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
-    if (existingJob.status === "submitted") {
+    const nonEditable = ["submitted", "PUBLISHED", "UNDER_REVIEW", "REVIEW_CLOSED", "COMPLETED", "APPLICATION_CLOSED"];
+    if (nonEditable.includes(existingJob.status)) {
       return res.status(400).json({ message: "Submitted jobs cannot be edited" });
     }
 

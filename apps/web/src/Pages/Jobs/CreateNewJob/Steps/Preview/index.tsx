@@ -38,6 +38,7 @@ type PreviewData = {
     title?: string;
     description?: string;
     jd_content?: string;
+    review_duration_days?: number;
   };
   application: Field[];
   reviewers: Reviewer[];
@@ -56,6 +57,7 @@ const Preview = ({ data, jobId, registerSubmit }: Props) => {
   const [page, setPage] = useState(1);
   const [openDialog, setOpenDialog] = useState(false);
   const [expiryAt, setExpiryAt] = useState("");
+  const [reviewDuration, setReviewDuration] = useState<number>(3);
   const [submitting, setSubmitting] = useState(false);
 
   const reviewers = data.reviewers || [];
@@ -105,13 +107,13 @@ const Preview = ({ data, jobId, registerSubmit }: Props) => {
     }
 
 
-    const isoDate = dayjs(expiryAt).toISOString();
     
     try {
       setSubmitting(true);
       await api.patch(`/jobs/${jobId}`, {
         exp: dayjs(expiryAt).toISOString(),
-        status: "submitted",
+        status: "PUBLISHED",
+        review_duration_days: reviewDuration,
       });
       toast.success("Job submitted successfully");
       setOpenDialog(false);
@@ -127,6 +129,12 @@ const Preview = ({ data, jobId, registerSubmit }: Props) => {
   useEffect(() => {
     registerSubmit(() => setOpenDialog(true));
   }, [registerSubmit]);
+
+  useEffect(() => {
+    // initialize review duration from job data if present
+    const rd = (data as any)?.meta?.review_duration_days;
+    if (rd) setReviewDuration(Number(rd));
+  }, [data]);
 
   return (
     <Box
@@ -216,6 +224,22 @@ const Preview = ({ data, jobId, registerSubmit }: Props) => {
           Job Description
         </Typography>
         <Divider sx={{ mb: 2 }} />
+        <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary">Application Deadline</Typography>
+            <Typography>{expiryAt ? dayjs(expiryAt).format('YYYY-MM-DD HH:mm') : 'Not set'}</Typography>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary">Review Duration</Typography>
+            <Typography>{reviewDuration} days</Typography>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary">Estimated Review Deadline</Typography>
+            <Typography>
+              {expiryAt ? dayjs(expiryAt).add(reviewDuration, 'day').format('YYYY-MM-DD HH:mm') : 'N/A'}
+            </Typography>
+          </Box>
+        </Box>
         <Box
           sx={{ color: "text.secondary" }}
           dangerouslySetInnerHTML={{
@@ -238,13 +262,20 @@ const Preview = ({ data, jobId, registerSubmit }: Props) => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Select the job expiry date and time before submitting.
           </Typography>
+          <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="Review Duration (Days)"
+              type="number"
+              value={reviewDuration}
+              onChange={(e) => setReviewDuration(Math.max(1, Number(e.target.value || 1)))}
+            />
+          </Box>
           <TextField
             fullWidth
-            // label="Expiry Date & Time"
             type="datetime-local"
             value={expiryAt}
             onChange={(e) => setExpiryAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

@@ -31,11 +31,15 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
+ useEffect(() => {
+  if (user) {
+    if (user.role === "REVIEWER") {
+      navigate("/reviewer-dashboard/application");
+    } else {
       navigate("/dashboard");
     }
-  }, [user, navigate]);
+  }
+}, [user, navigate]);
 
   const onSubmit: SubmitHandler<Inputs> = async (payload) => {
     try {
@@ -45,7 +49,6 @@ const Login = () => {
       dispatch(setUser(user));
 
       toast.success("Logged in successfully");
-      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message || "Something went wrong");
     }

@@ -7,8 +7,8 @@ export default function RequireAuth({ allowedRoles }: { allowedRoles?: string[] 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    console.log('true')
     if (user.role === "REVIEWER") {
       return (
         <Navigate

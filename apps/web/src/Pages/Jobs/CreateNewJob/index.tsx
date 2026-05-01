@@ -44,6 +44,7 @@ export default function CreateNewJob() {
             meta: {
               title: job.title,
               description: job.description,
+              review_duration_days: job.review_duration_days ?? 3,
               jd_content: job.jd_content,
             },
             application: job.fields || [],
