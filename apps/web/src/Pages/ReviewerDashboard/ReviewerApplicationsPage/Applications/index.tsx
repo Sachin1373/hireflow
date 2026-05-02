@@ -1,8 +1,6 @@
 import {
   Box,
   Typography,
-  Paper,
-  Grid,
   Chip,
   Button,
   Stack,
@@ -10,84 +8,164 @@ import {
   IconButton,
 } from "@mui/material";
 
+import { useParams } from "react-router-dom";
+
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 
 import CustomTable from "@/Components/CustomTable";
+import { useEffect, useState } from "react";
+import api from "@/axiosInstance";
+import CollapsibleJD from "@/Components/CollapsibleJD";
 
-const mockApplications = [
-  {
-    id: 1,
-    name: "Rahul Sharma",
-    email: "rahul@example.com",
-    experience: "3 Years",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    name: "Priya Patel",
-    email: "priya@example.com",
-    experience: "5 Years",
-    status: "Pending",
-  },
-];
+type JobMetaData = {
+  title: string;
+  desc: string;
+  status: string;
+  review_expires_at: string;
+  jd_content: string;
+};
+
+type Application = {
+  id: string;
+  name: string;
+  email: string;
+  resume_url: string;
+  status: string;
+};
 
 const ReviewApplications = () => {
+  const { jobId } = useParams();
+  const [loading, setLoading] = useState(false);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const limit = 5;
+
+  const [JobMetaData, setJobMetaData] = useState<JobMetaData>({
+    title: "",
+    desc: "",
+    status: "",
+    review_expires_at: "",
+    jd_content: "",
+  });
+
+  const fetchJobMetaData = async () => {
+    try {
+      const res = await api.get(`/jobs/${jobId}`);
+
+      setJobMetaData({
+        title: res.data.data.title,
+        desc: res.data.data.description,
+        status: res.data.data.status,
+        review_expires_at: res.data.data.review_expires_at,
+        jd_content: res.data.data.jd_content,
+      });
+    } catch (error) {
+      console.error("Failed to fetch job metadata", error);
+    }
+  };
+
+  const fetchApplications = async () => {
+    try {
+      setLoading(true);
+
+      const res = await api.get(
+        `/reviewer/assigned-applications/${jobId}?page=${page}&limit=${limit}`,
+      );
+
+      setApplications(res.data.data || []);
+      setTotal(res.data.pagination.total || 0);
+    } catch (error) {
+      console.error("Failed to fetch applications", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (
+    applicationId: string,
+    status: "SELECTED" | "REJECTED",
+  ) => {
+    try {
+      await api.patch(`/reviewer/applications/${applicationId}/status`, {
+        status,
+      });
+
+      fetchApplications();
+    } catch (error) {
+      console.error("Failed to update status", error);
+    }
+  };
+
+  useEffect(() => {
+    if (jobId) {
+      fetchJobMetaData();
+      fetchApplications();
+    }
+  }, [jobId, page]);
+
   const columns = [
     {
       field: "candidate",
       headerName: "Candidate",
-      render: (row: any) => (
+      render: (row: Application) => (
         <Stack direction="row" spacing={2} alignItems="center">
-          <Avatar>
-            {row.name?.charAt(0)}
+          <Avatar
+            sx={{
+              bgcolor: "black",
+            }}
+          >
+            {row.name?.charAt(0).toUpperCase()}
           </Avatar>
           <Box>
-            <Typography sx={{ fontWeight: '600' }}>
+            <Typography
+              sx={{
+                fontWeight: 600,
+              }}
+            >
               {row.name}
             </Typography>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
+            <Typography variant="body2" color="text.secondary">
               {row.email}
             </Typography>
           </Box>
         </Stack>
       ),
     },
-    {
-      field: "experience",
-      headerName: "Experience",
-      render: (row: any) => (
-        <Typography>
-          {row.experience}
-        </Typography>
-      ),
-    },
+
     {
       field: "resume",
       headerName: "Resume",
-      render: () => (
+      render: (row: Application) => (
         <Button
           variant="outlined"
           size="small"
           startIcon={<VisibilityIcon />}
           sx={{
             textTransform: "none",
-            borderRadius: "8px",
+            borderRadius: "10px",
           }}
+          onClick={() =>
+            window.open(
+              `http://localhost:3001${row.resume_url}`,
+              "_blank",
+              "width=900,height=700",
+            )
+          }
         >
           View Resume
         </Button>
       ),
     },
+
     {
       field: "status",
       headerName: "Status",
-      render: (row: any) => (
+      render: (row: Application) => (
         <Chip
           label={row.status}
           size="small"
@@ -101,12 +179,22 @@ const ReviewApplications = () => {
     {
       field: "actions",
       headerName: "Actions",
-      render: () => (
-        <Stack direction="row" spacing={1}>
+      render: (row: Application) => {
+        if (row.status === "SELECTED" || row.status === "REJECTED") {
+          return (
+            <Chip
+              label={row.status}
+              size="small"
+              color={row.status === "SELECTED" ? "success" : "error"}
+            />
+          );
+        }
+        return (
+          <Stack direction="row" spacing={1}>
           <IconButton
+            onClick={() => updateStatus(row.id, "SELECTED")}
             sx={{
               bgcolor: "#ecfdf3",
-
               "&:hover": {
                 bgcolor: "#d1fadf",
               },
@@ -116,9 +204,9 @@ const ReviewApplications = () => {
           </IconButton>
 
           <IconButton
+            onClick={() => updateStatus(row.id, "REJECTED")}
             sx={{
               bgcolor: "#fef3f2",
-
               "&:hover": {
                 bgcolor: "#fee4e2",
               },
@@ -127,14 +215,14 @@ const ReviewApplications = () => {
             <CancelIcon color="error" />
           </IconButton>
         </Stack>
-      ),
+        )
+      },
     },
   ];
 
   return (
     <Box>
-      {/* PAGE HEADER */}
-
+      {/* HEADER */}
       <Box sx={{ mb: 4 }}>
         <Typography
           variant="h4"
@@ -143,162 +231,59 @@ const ReviewApplications = () => {
             mb: 1,
           }}
         >
-          Review Applications
+          {JobMetaData.title}
         </Typography>
 
-        <Typography color="text.secondary">
-          Review assigned candidates for this job.
-        </Typography>
+        <Typography color="text.secondary">{JobMetaData.desc}</Typography>
       </Box>
 
-      {/* JOB DETAILS */}
+      {/* META */}
 
-      <Paper
-        sx={{
-          p: 4,
-          borderRadius: "16px",
-          mb: 4,
-          boxShadow: "none",
-          border: "1px solid #e5e7eb",
-        }}
-      >
-        <Box
-          className="flex flex-col md:flex-row md:items-start md:justify-between gap-4"
+      <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+        <Chip
+          label={JobMetaData.status}
+          sx={{
+            bgcolor: "black",
+            color: "white",
+          }}
+        />
+
+        <Chip
+          label={`Review Ends: ${
+            JobMetaData.review_expires_at
+              ? new Date(JobMetaData.review_expires_at).toLocaleDateString()
+              : "-"
+          }`}
+        />
+      </Stack>
+
+      {/* JD */}
+
+      <CollapsibleJD jdContent={JobMetaData.jd_content} />
+
+      {/* TABLE */}
+
+      <Box sx={{ mt: 4 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            mb: 3,
+          }}
         >
-          <Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                mb: 1,
-              }}
-            >
-              Senior Backend Engineer
-            </Typography>
-
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{
-                maxWidth: "800px",
-                lineHeight: 1.8,
-              }}
-            >
-              Looking for an experienced backend
-              engineer with strong knowledge in
-              Node.js, Golang, distributed systems,
-              PostgreSQL, and scalable API design.
-            </Typography>
-          </Box>
-
-          <Chip
-            label="Active"
-            color="success"
-          />
-        </Box>
-
-        <Grid
-          container
-          spacing={3}
-          sx={{ mt: 3 }}
-        >
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              Department
-            </Typography>
-
-            <Typography sx={{ fontWeight: '600' }}>
-              Engineering
-            </Typography>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              Experience Required
-            </Typography>
-
-            <Typography sx={{ fontWeight: '600' }}>
-              3-5 Years
-            </Typography>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              Total Applications
-            </Typography>
-
-            <Typography sx={{ fontWeight: '600' }}>
-              24 Candidates
-            </Typography>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              Deadline
-            </Typography>
-
-            <Typography sx={{ fontWeight: '600' }}>
-              30 Apr 2026
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* APPLICATION TABLE */}
-
-      <Paper
-        sx={{
-          p: 3,
-          borderRadius: "16px",
-          border: "1px solid #e5e7eb",
-          boxShadow: "none",
-        }}
-      >
-        <Box
-          className="flex items-center justify-between mb-4"
-        >
-          <Box>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-              }}
-            >
-              Assigned Candidates
-            </Typography>
-
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
-              Review and take action on
-              applications.
-            </Typography>
-          </Box>
-        </Box>
+          Assigned Applications
+        </Typography>
 
         <CustomTable
           columns={columns}
-          rows={mockApplications}
-          loading={false}
-          page={1}
-          total={mockApplications.length}
-          rowsPerPage={10}
-          onPageChange={() => {}}
+          rows={applications}
+          loading={loading}
+          page={page}
+          total={total}
+          rowsPerPage={limit}
+          onPageChange={(newPage) => setPage(newPage)}
         />
-      </Paper>
+      </Box>
     </Box>
   );
 };

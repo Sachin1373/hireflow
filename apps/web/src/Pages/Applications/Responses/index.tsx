@@ -18,6 +18,7 @@ type ApplicationRow = {
   candidate_email: string;
   candidate_phone?: string;
   status: string;
+  reviewer_email: string;
   applied_at: string;
   assigned_reviewer_count?: number;
 };
@@ -38,7 +39,7 @@ export const Responses = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const limit = 10;
+  const limit = 5;
 
   const fetchData = async () => {
     try {
@@ -122,26 +123,14 @@ export const Responses = () => {
       ),
     },
     {
-      field: "phone",
-      headerName: "Phone",
-      render: (row: ApplicationRow) => (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-        >
-          {row.candidate_phone || "-"}
-        </Typography>
-      ),
-    },
-    {
       field: "reviewers",
-      headerName: "Reviewers",
+      headerName: "Reviewer",
       render: (row: ApplicationRow) => (
         <Typography
           variant="body2"
           color="text.secondary"
         >
-          {row.assigned_reviewer_count || 0}
+          {row.reviewer_email || 0}
         </Typography>
       ),
     },

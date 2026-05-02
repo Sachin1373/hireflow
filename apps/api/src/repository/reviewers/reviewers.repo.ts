@@ -180,3 +180,87 @@ export const getAssignedJobsForReviewer = async (
     limit,
   };
 };
+
+export const getAssignedApplications = async (
+  reviewer_id: string,
+  job_id: string,
+  page: number = 1,
+  limit: number = 10
+) => {
+  const offset = (page - 1) * limit;
+
+  const countRes = await pool.query(
+    `
+    SELECT COUNT(*) 
+    FROM assignments ass
+    JOIN applications a
+      ON a.id = ass.application_id
+    WHERE ass.reviewer_id = $1
+      AND ass.job_id = $2
+    `,
+    [reviewer_id, job_id]
+  );
+
+  const total = parseInt(
+    countRes.rows[0].count,
+    10
+  );
+
+  const res = await pool.query(
+    `
+    SELECT 
+      a.id,
+      a.candidate_name AS name,
+      a.candidate_email AS email,
+      a.resume_url,
+      a.status,
+      a.applied_at AS created_at
+
+    FROM assignments ass
+
+    JOIN applications a
+      ON a.id = ass.application_id
+
+    WHERE ass.reviewer_id = $1
+      AND ass.job_id = $2
+
+    ORDER BY a.applied_at DESC
+
+    LIMIT $3
+    OFFSET $4
+    `,
+    [reviewer_id, job_id, limit, offset]
+  );
+
+  return {
+    applications: res.rows,
+    total,
+  };
+};
+
+export const reviewerUpdateApplicationStatus =
+  async (
+    reviewer_id: string,
+    application_id: string,
+    status: string
+  ) => {
+
+    const res = await pool.query(
+      `
+      UPDATE applications a
+      SET status = $1
+      FROM assignments ass
+      WHERE ass.application_id = a.id
+        AND ass.reviewer_id = $2
+        AND a.id = $3
+      RETURNING a.*;
+      `,
+      [
+        status,
+        reviewer_id,
+        application_id,
+      ]
+    );
+
+    return res.rows[0] || null;
+  };
