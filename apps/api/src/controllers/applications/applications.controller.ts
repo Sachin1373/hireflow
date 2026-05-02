@@ -7,6 +7,7 @@ export const GetJobApplications = async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || "";
+    const status = (req.query.status as string) || "";
 
     if (!job_id) {
       return res.status(400).json({
@@ -14,7 +15,7 @@ export const GetJobApplications = async (req: Request, res: Response) => {
       });
     }
 
-    const result = await getApplications(job_id as string,  page, limit, search);
+    const result = await getApplications(job_id as string,  page, limit, search, status);
     return res.status(200).json({
       data: result.applications,
       pagination: {

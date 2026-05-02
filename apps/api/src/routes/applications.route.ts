@@ -4,7 +4,7 @@ import { GetJobApplications } from "../controllers/applications/applications.con
 
 const route = Router()
 
-route.get('/job/:job_id/fetchAll', authenticateToken, GetJobApplications)
+route.get('/jobs/:job_id/applications', authenticateToken, GetJobApplications)
 
 
 

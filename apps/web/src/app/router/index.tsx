@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
-import MainLayout from "@/Layout/MainLayout";
 import DashboardPage from "@/Pages/Dashboard";
+import AdminLayout from "@/Layout/AdminLayout";
+import ReviewerLayout from "@/Layout/ReviewerLayout";
 import JobsPage from "@/Pages/Jobs";
 import Applications from "@/Pages/Applications";
 import ReviewersPage from "@/Pages/Reviewers";
@@ -14,61 +15,57 @@ import PublicApplyPage from "@/Pages/PublicApply";
 import { Responses } from "@/Pages/Applications/Responses";
 import ReviewerApplicationsPage from "@/Pages/ReviewerDashboard/ReviewerApplicationsPage";
 import ReviewApplications from "@/Pages/ReviewerDashboard/ReviewerApplicationsPage/Applications";
+import Pipeline from "@/Pages/Applications/Pipeline";
 
 export const router = createBrowserRouter([
   {
-    element: <RequireAuth allowedRoles={["ADMIN", "HR", "REVIEWER"]} />,
+    path: "/dashboard",
+    element: (
+      <RequireAuth allowedRoles={["ADMIN", "HR"]}>
+        <AdminLayout />
+      </RequireAuth>
+    ),
     children: [
+      { index: true, element: <DashboardPage /> },
+
       {
-        path: "/dashboard",
-        element: <MainLayout />,
+        path: "jobs",
         children: [
-          { index: true, element: <DashboardPage /> },
-
-          {
-            element: <RequireAuth allowedRoles={["ADMIN", "HR"]} />,
-            children: [
-              {
-                path: "jobs",
-                children: [
-                  { index: true, element: <JobsPage /> },
-                  { path: "new", element: <CreateNewJob /> },
-                  { path: ":jobId", element: <JobDetails /> },
-                ],
-              },
-
-              {
-                path: "applications",
-                children: [
-                  { index: true, element: <Applications /> },
-                  { path: ":jobId", element: <Responses /> },
-                ],
-              },
-
-              { path: "reviewers", element: <ReviewersPage /> },
-              { path: "users", element: <UsersPage /> },
-            ],
-          },
+          { index: true, element: <JobsPage /> },
+          { path: "new", element: <CreateNewJob /> },
+          { path: ":jobId", element: <JobDetails /> },
         ],
       },
+
       {
-        path: "/reviewer-dashboard",
-        element: <MainLayout />,
+        path: "applications",
         children: [
-          {
-            element: <RequireAuth allowedRoles={["REVIEWER"]} />,
-            children: [
-              {
-                path: "application",
-                element: <ReviewerApplicationsPage />,
-              },
-              {
-                path: "application/:jobId",
-                element: <ReviewApplications />,
-              },
-            ],
-          },
+          { index: true, element: <Applications /> },
+          { path: "responses/:jobId", element: <Responses /> },
+          { path: "pipeline/:jobId", element: <Pipeline/> },
         ],
+      },
+
+      { path: "reviewers", element: <ReviewersPage /> },
+      { path: "users", element: <UsersPage /> },
+    ],
+  },
+
+  {
+    path: "/reviewer-dashboard",
+    element: (
+      <RequireAuth allowedRoles={["REVIEWER"]}>
+        <ReviewerLayout />
+      </RequireAuth>
+    ),
+    children: [
+      {
+        path: "application",
+        element: <ReviewerApplicationsPage />,
+      },
+      {
+        path: "application/:jobId",
+        element: <ReviewApplications />,
       },
     ],
   },

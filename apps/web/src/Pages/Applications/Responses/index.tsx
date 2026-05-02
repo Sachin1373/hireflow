@@ -50,7 +50,7 @@ export const Responses = () => {
           api.get(`/jobs/${jobId}/metedata`),
 
           api.get(
-            `/applications/job/${jobId}/fetchAll`,
+              `/applications/jobs/${jobId}/applications`,
             {
               params: {
                 page,

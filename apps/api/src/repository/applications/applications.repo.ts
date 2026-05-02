@@ -70,73 +70,69 @@ export const getApplications = async (
   job_id: string,
   page: number = 1,
   limit: number = 10,
-  search: string = ""
+  search: string = "",
+  status: string = ""
 ) => {
   const offset = (page - 1) * limit;
 
   const values: any[] = [job_id];
+  let paramIndex = 2;
 
-  let whereClause = `
-    WHERE a.job_id = $1
-  `;
+  let whereClause = `WHERE a.job_id = $1`;
 
+  // ✅ STATUS filter
+  if (status) {
+    whereClause += ` AND a.status = $${paramIndex}`;
+    values.push(status);
+    paramIndex++;
+  }
+
+  // ✅ SEARCH filter
   if (search) {
     whereClause += `
       AND (
-        a.candidate_name ILIKE $2
-        OR a.candidate_email ILIKE $2
+        a.candidate_name ILIKE $${paramIndex}
+        OR a.candidate_email ILIKE $${paramIndex}
       )
     `;
-
     values.push(`%${search}%`);
+    paramIndex++;
   }
 
-  const fromClause = `
+  const baseQuery = `
     FROM applications a
-
-    LEFT JOIN assignments ass
-      ON ass.application_id = a.id
-
-    LEFT JOIN users u
-      ON u.id = ass.reviewer_id
+    LEFT JOIN assignments ass ON ass.application_id = a.id
+    LEFT JOIN users u ON u.id = ass.reviewer_id
+    ${whereClause}
   `;
 
+  // COUNT
   const countRes = await pool.query(
-    `
-      SELECT COUNT(DISTINCT a.id)
-      ${fromClause}
-      ${whereClause}
-    `,
+    `SELECT COUNT(DISTINCT a.id) ${baseQuery}`,
     values
   );
 
   const total = parseInt(countRes.rows[0].count, 10);
 
-  const query = `
+  // DATA
+  const dataRes = await pool.query(
+    `
     SELECT
       a.*,
       u.email AS reviewer_email
-
-    ${fromClause}
-
-    ${whereClause}
-
+    ${baseQuery}
     ORDER BY a.applied_at DESC
-
-    LIMIT $${values.length + 1}
-    OFFSET $${values.length + 2}
-  `;
-
-  const res = await pool.query(query, [
-    ...values,
-    limit,
-    offset,
-  ]);
+    LIMIT $${paramIndex}
+    OFFSET $${paramIndex + 1}
+    `,
+    [...values, limit, offset]
+  );
 
   return {
-    applications: res.rows,
+    applications: dataRes.rows,
     total,
     page,
     limit,
   };
 };
+

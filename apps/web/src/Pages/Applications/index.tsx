@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import {
   Box,
+  Button,
   Typography,
   Grid,
   Card,
@@ -91,9 +92,7 @@ export default function Applications() {
           return (
             <Grid item xs={12} sm={6} md={3} key={job.id}>
               <Card
-                onClick={() => navigate(`/dashboard/applications/${job.id}`)}
                 sx={{
-                  cursor: "pointer",
                   borderRadius: "16px",
                   border: "1px solid #e5e7eb",
                   boxShadow: "none",
@@ -114,10 +113,10 @@ export default function Applications() {
                     height: "100%",
                   }}
                 >
+                  {/* status */}
                   <Stack
                     direction="row"
                     justifyContent="space-between"
-                    alignItems="center"
                     sx={{ mb: 2 }}
                   >
                     <Chip
@@ -132,60 +131,48 @@ export default function Applications() {
                     />
                   </Stack>
 
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 700,
-                      mb: 1,
-                      lineHeight: 1.3,
-                    }}
-                  >
+                  {/* title */}
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                     {job.title}
                   </Typography>
 
-                  <Box
-                    sx={{
-                      flexGrow: 1,
-                      mb: 3,
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        lineHeight: 1.7,
-                      }}
-                    >
+                  {/* description */}
+                  <Box sx={{ flexGrow: 1, mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
                       {shortDescription}
                     </Typography>
-
-                    {isLongDescription && (
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mt: 1,
-                          fontWeight: 600,
-                          color: "primary.main",
-                        }}
-                      >
-                        Show more
-                      </Typography>
-                    )}
                   </Box>
 
+                  {/* ✅ NEW BUTTONS */}
+                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() =>
+                        navigate(`/dashboard/applications/responses/${job.id}`)
+                      }
+                    >
+                      Responses
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() =>
+                        navigate(`/dashboard/applications/pipeline/${job.id}`)
+                      }
+                    >
+                      Pipeline
+                    </Button>
+                  </Stack>
+
+                  {/* footer */}
                   <Box sx={{ mt: "auto" }}>
                     <Typography variant="caption" color="text.secondary">
                       Created At
                     </Typography>
 
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 600,
-                      }}
-                    >
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {new Date(job.created_at).toLocaleDateString(undefined, {
                         year: "numeric",
                         month: "short",
