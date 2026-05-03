@@ -1,6 +1,7 @@
 package mailer
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 )
 
 func SendReviewAssignmentEmail(
+	ctx context.Context,
 	cfg *config.Config,
 	to string,
 	reviewerName string,

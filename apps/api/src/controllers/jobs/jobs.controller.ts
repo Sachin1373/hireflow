@@ -103,7 +103,6 @@ export const UpdateJob = async (req: Request, res: Response) => {
         .json({ message: "Job not found or nothing to update" });
     } 
 
-    console.log('existingJob :', existingJob)
 
     const nonEditable = ["submitted", "PUBLISHED", "UNDER_REVIEW", "REVIEW_CLOSED", "COMPLETED", "APPLICATION_CLOSED"];
     if (nonEditable.includes(existingJob.status)) {

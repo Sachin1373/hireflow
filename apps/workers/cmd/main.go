@@ -1,32 +1,36 @@
 package main
 
 import (
+	"context"
 	"log"
-	"time"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Sachin1373/hireflow/worker/internal/config"
 	"github.com/Sachin1373/hireflow/worker/internal/db"
-	"github.com/Sachin1373/hireflow/worker/internal/jobs"
+	"github.com/Sachin1373/hireflow/worker/internal/scheduler"
 )
 
 func main() {
 	cfg, err := config.Load()
-
 	if err != nil {
-		panic("failed to load config: " + err.Error())
+		panic(err)
 	}
 
 	db.Connect(cfg)
 
 	log.Println("Worker started")
 
-	for {
-		err := jobs.ProcessExpiredJobs(cfg)
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
 
-		if err != nil {
-			log.Println(err)
-		}
+	defer stop()
 
-		time.Sleep(1 * time.Minute)
-	}
+	scheduler.StartWorker(ctx, cfg)
+
+	log.Println("Worker stopped gracefully")
 }
