@@ -8,6 +8,7 @@ import {
   deleteJob,
   getJobStatusById,
   getJobMetaData,
+  completeJob,
 } from "../../repository/jobs/jobs.repo";
 
 export const CreateJob = async (req: Request, res: Response) => {
@@ -101,10 +102,16 @@ export const UpdateJob = async (req: Request, res: Response) => {
       return res
         .status(404)
         .json({ message: "Job not found or nothing to update" });
-    } 
+    }
 
-
-    const nonEditable = ["submitted", "PUBLISHED", "UNDER_REVIEW", "REVIEW_CLOSED", "COMPLETED", "APPLICATION_CLOSED"];
+    const nonEditable = [
+      "submitted",
+      "PUBLISHED",
+      "UNDER_REVIEW",
+      "REVIEW_CLOSED",
+      "COMPLETED",
+      "APPLICATION_CLOSED",
+    ];
     if (nonEditable.includes(existingJob.status)) {
       return res
         .status(400)
@@ -167,7 +174,14 @@ export const SaveJobReviewers = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
-    const nonEditable2 = ["submitted", "PUBLISHED", "UNDER_REVIEW", "REVIEW_CLOSED", "COMPLETED", "APPLICATION_CLOSED"];
+    const nonEditable2 = [
+      "submitted",
+      "PUBLISHED",
+      "UNDER_REVIEW",
+      "REVIEW_CLOSED",
+      "COMPLETED",
+      "APPLICATION_CLOSED",
+    ];
     if (nonEditable2.includes(existingJob.status)) {
       return res
         .status(400)
@@ -220,6 +234,23 @@ export const JobMetadata = async (req: Request, res: Response) => {
 
     return res.status(500).json({
       message: error.message || "Failed to fetch job metadata",
+    });
+  }
+};
+
+export const completeJobController = async (req: Request, res: Response) => {
+  try {
+    const { job_id } = req.params;
+    const job = await completeJob(job_id as string);
+
+    return res.json({
+      message: "Job marked as completed",
+      data: job,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Failed to complete job",
     });
   }
 };

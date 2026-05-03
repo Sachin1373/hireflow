@@ -104,6 +104,7 @@ func MarkInterviewTriggered(ctx context.Context, jobID string) error {
 	_, err := db.DB.ExecContext(ctx, `
 		UPDATE jobs
 		SET interview_processed = true
+		SET status = "REVIEW_CLOSED"
 		WHERE id = $1
 	`, jobID)
 

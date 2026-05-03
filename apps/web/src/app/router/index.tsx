@@ -16,6 +16,7 @@ import { Responses } from "@/Pages/Applications/Responses";
 import ReviewerApplicationsPage from "@/Pages/ReviewerDashboard/ReviewerApplicationsPage";
 import ReviewApplications from "@/Pages/ReviewerDashboard/ReviewerApplicationsPage/Applications";
 import Pipeline from "@/Pages/Applications/Pipeline";
+import Interview from "@/Pages/ReviewerDashboard/Interviews";
 
 export const router = createBrowserRouter([
   {
@@ -67,6 +68,10 @@ export const router = createBrowserRouter([
         path: "application/:jobId",
         element: <ReviewApplications />,
       },
+      {
+        path: "interviews",
+        element: <Interview/>
+      }
     ],
   },
 

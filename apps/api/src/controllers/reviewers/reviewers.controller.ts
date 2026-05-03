@@ -7,6 +7,8 @@ import {
   getReviewers,
   DeleteReviewerService,
   AssignReviewersToJob,
+  getInterviews,
+  updateInterviewStatus,
 } from "../../repository/reviewers/reviewers.repo";
 import { sendEmail } from "../../services/email/sendEmail";
 import { inviteUserTemplate } from "../../services/email/templates/inviteUserTemplate";
@@ -246,4 +248,62 @@ export const SaveJobReviewers = async (req: Request, res: Response) => {
       message: error.message || "Failed to assign reviewers",
     });
   }
+};
+
+export const getReviewerInterviewsController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const reviewer_id = (req as any).user.id;
+    const page = Number(req.query.page || 1);
+    const limit = Number(req.query.limit || 10);
+    const search = String(req.query.search || "");
+    const data = await getInterviews(reviewer_id, search, page, limit);
+    return res.json(data);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateInterviewStatusController =
+  async (
+    req: Request,
+    res: Response,
+  ) => {
+
+    try {
+
+      const interviewId = req.params.id;
+      const { status } = req.body;
+      const allowedStatuses = [
+        "SELECTED",
+        "REJECTED",
+      ];
+
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          error:
+            "Invalid status",
+        });
+      }
+
+      await updateInterviewStatus(
+        interviewId as string,
+        status,
+      );
+
+      return res.json({
+        message:
+          "Interview updated successfully",
+      });
+
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        error:
+          "Failed to update interview",
+      });
+    }
 };

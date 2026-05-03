@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import SearchBar from "@/Components/SearchBar";
 import CustomTable from "@/Components/CustomTable";
 import api from "@/axiosInstance";
+import { toast } from "react-toastify";
 
 type JobRow = {
   id: string;
@@ -41,6 +42,15 @@ export default function ReviewerApplicationsPage() {
   useEffect(() => {
     fetchJobs();
   }, [page, searchQuery]);
+
+
+  const handleAction = (row: any) =>{
+    if(row.status == 'REVIEW_CLOSED'){
+      toast.error("Review Closed");
+    } else {
+      navigate(`/reviewer-dashboard/application/${row.id}`)
+    }
+  }
 
   const columns = [
     {
@@ -102,7 +112,7 @@ export default function ReviewerApplicationsPage() {
         <Typography
           variant="body2"
           color="text.secondary"
-          onClick={() => navigate(`/reviewer-dashboard/application/${row.id}`)}
+          onClick={() => handleAction(row)}
           sx={{
             color: "primary.main",
             fontWeight: 600,

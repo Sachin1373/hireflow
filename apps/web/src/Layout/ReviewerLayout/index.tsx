@@ -6,6 +6,7 @@ import Sidebar from "@/Components/Sidebar";
 export default function ReviewerLayout() {
   const reviewerNavItems = [
   { label: "Applications", path: "/reviewer-dashboard/application" },
+  { label: "Interviews", path: "/reviewer-dashboard/interviews" },
   { label: "Setting", path: "/reviewer-dashboard/setting" },
 ];
 

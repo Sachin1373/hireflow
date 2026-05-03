@@ -236,3 +236,20 @@ export const getJobMetaData = async(job_id: string) => {
   return res.rows[0]
 }
 
+
+export const completeJob = async (
+  job_id: string,
+) => {
+
+  const res = await pool.query(
+    `
+    UPDATE jobs
+    SET status = 'COMPLETED'
+    WHERE id = $1
+    RETURNING *
+    `,
+    [job_id],
+  );
+
+  return res.rows[0];
+};

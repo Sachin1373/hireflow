@@ -8,19 +8,24 @@ import {
   SaveJobReviewers,
   DeleteJob,
   JobMetadata,
+  completeJobController,
 } from "../controllers/jobs/jobs.controller";
-import { SaveFormFields, GetFormFields } from "../controllers/formFields/formFields.controller";
+import {
+  SaveFormFields,
+  GetFormFields,
+} from "../controllers/formFields/formFields.controller";
 
-const route = Router()
+const route = Router();
 
-route.post('/create', authenticateToken, CreateJob)
-route.get('/list', authenticateToken, GetAllJobs)
-route.get('/:id', authenticateToken, GetJob)
-route.patch('/:id', authenticateToken, UpdateJob)
-route.delete('/:id', authenticateToken, DeleteJob)
-route.post('/:job_id/fields', authenticateToken, SaveFormFields)
-route.get('/:job_id/fields', authenticateToken, GetFormFields)
-route.post('/:job_id/reviewers', authenticateToken, SaveJobReviewers)
-route.get('/:job_id/metedata', authenticateToken, JobMetadata)
+route.post("/create", authenticateToken, CreateJob);
+route.get("/list", authenticateToken, GetAllJobs);
+route.get("/:id", authenticateToken, GetJob);
+route.patch("/:id", authenticateToken, UpdateJob);
+route.delete("/:id", authenticateToken, DeleteJob);
+route.post("/:job_id/fields", authenticateToken, SaveFormFields);
+route.get("/:job_id/fields", authenticateToken, GetFormFields);
+route.post("/:job_id/reviewers", authenticateToken, SaveJobReviewers);
+route.get("/:job_id/metedata", authenticateToken, JobMetadata);
+route.patch("/:job_id/complete", authenticateToken, completeJobController);
 
 export default route;

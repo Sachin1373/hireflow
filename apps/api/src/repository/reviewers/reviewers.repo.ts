@@ -167,11 +167,7 @@ export const getAssignedJobsForReviewer = async (
     OFFSET $${values.length + 2}
   `;
 
-  const res = await pool.query(query, [
-    ...values,
-    limit,
-    offset,
-  ]);
+  const res = await pool.query(query, [...values, limit, offset]);
 
   return {
     jobs: res.rows,
@@ -185,7 +181,7 @@ export const getAssignedApplications = async (
   reviewer_id: string,
   job_id: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
 ) => {
   const offset = (page - 1) * limit;
 
@@ -198,13 +194,10 @@ export const getAssignedApplications = async (
     WHERE ass.reviewer_id = $1
       AND ass.job_id = $2
     `,
-    [reviewer_id, job_id]
+    [reviewer_id, job_id],
   );
 
-  const total = parseInt(
-    countRes.rows[0].count,
-    10
-  );
+  const total = parseInt(countRes.rows[0].count, 10);
 
   const res = await pool.query(
     `
@@ -229,7 +222,7 @@ export const getAssignedApplications = async (
     LIMIT $3
     OFFSET $4
     `,
-    [reviewer_id, job_id, limit, offset]
+    [reviewer_id, job_id, limit, offset],
   );
 
   return {
@@ -238,15 +231,13 @@ export const getAssignedApplications = async (
   };
 };
 
-export const reviewerUpdateApplicationStatus =
-  async (
-    reviewer_id: string,
-    application_id: string,
-    status: string
-  ) => {
-
-    const res = await pool.query(
-      `
+export const reviewerUpdateApplicationStatus = async (
+  reviewer_id: string,
+  application_id: string,
+  status: string,
+) => {
+  const res = await pool.query(
+    `
       UPDATE applications a
       SET status = $1
       FROM assignments ass
@@ -255,12 +246,152 @@ export const reviewerUpdateApplicationStatus =
         AND a.id = $3
       RETURNING a.*;
       `,
-      [
-        status,
-        reviewer_id,
-        application_id,
-      ]
+    [status, reviewer_id, application_id],
+  );
+
+  return res.rows[0] || null;
+};
+
+export const getInterviews = async (
+  reviewer_id: string,
+  search: string = "",
+  page: number = 1,
+  limit: number = 10,
+) => {
+  const offset = (page - 1) * limit;
+
+  const countRes = await pool.query(
+    `
+    SELECT COUNT(*)
+    FROM interviews i
+    JOIN applications a
+      ON a.id = i.application_id
+    JOIN jobs j
+      ON j.id = i.job_id
+    WHERE i.reviewer_id = $1
+    AND (
+      $2 = ''
+      OR a.candidate_name ILIKE '%' || $2 || '%'
+      OR a.candidate_email ILIKE '%' || $2 || '%'
+      OR j.title ILIKE '%' || $2 || '%'
+    )
+    `,
+    [reviewer_id, search],
+  );
+
+  const total = parseInt(countRes.rows[0].count, 10);
+
+  const res = await pool.query(
+    `
+    SELECT
+      i.id AS interview_id,
+      i.status AS interview_status,
+      i.created_at,
+
+      a.id AS application_id,
+      a.candidate_name,
+      a.candidate_email,
+      a.resume_url,
+
+      j.id AS job_id,
+      j.title AS job_title
+
+    FROM interviews i
+
+    JOIN applications a
+      ON a.id = i.application_id
+
+    JOIN jobs j
+      ON j.id = i.job_id
+
+    WHERE i.reviewer_id = $1
+
+    AND (
+      $2 = ''
+      OR a.candidate_name ILIKE '%' || $2 || '%'
+      OR a.candidate_email ILIKE '%' || $2 || '%'
+      OR j.title ILIKE '%' || $2 || '%'
+    )
+
+    ORDER BY i.created_at DESC
+
+    LIMIT $3
+    OFFSET $4
+    `,
+    [reviewer_id, search, limit, offset],
+  );
+
+  return {
+    interviews: res.rows,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
+export const updateInterviewStatus = async (
+  interviewId: string,
+  status: string,
+) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const res = await client.query(
+      `
+          SELECT application_id
+          FROM interviews
+          WHERE id = $1
+          `,
+      [interviewId],
     );
 
-    return res.rows[0] || null;
-  };
+    if (res.rows.length === 0) {
+      throw new Error("Interview not found");
+    }
+
+    const applicationId = res.rows[0].application_id;
+
+    // update interview
+
+    await client.query(
+      `
+        UPDATE interviews
+        SET status = $2
+        WHERE id = $1
+        `,
+      [interviewId, status],
+    );
+
+    // update application
+
+    let applicationStatus;
+
+    if (status === "SELECTED") {
+      applicationStatus = "HIRED";
+    } else if (status === "REJECTED") {
+      applicationStatus = "REJECTED";
+    } else {
+      throw new Error("Invalid status");
+    }
+
+    await client.query(
+      `
+        UPDATE applications
+        SET status = $2
+        WHERE id = $1
+        `,
+      [applicationId, applicationStatus],
+    );
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+
+    throw err;
+  } finally {
+    client.release();
+  }
+};

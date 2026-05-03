@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "@/axiosInstance";
 import {
   Box,
@@ -8,6 +8,7 @@ import {
   Button,
 } from "@mui/material";
 import ApplicationColumn from "./ApplicationColumn";
+import { toast } from "react-toastify";
 
 type JobMetaData = {
   title: string;
@@ -18,7 +19,7 @@ type JobMetaData = {
 
 export default function Pipeline() {
   const { jobId } = useParams();
-
+  const navigate = useNavigate();
   const [JobMetaData, setJobMetaData] = useState<JobMetaData>({
     title: "",
     desc: "",
@@ -44,6 +45,18 @@ export default function Pipeline() {
       console.error("Failed to fetch job metadata", error);
     }
   };
+
+  const handleComplete = async() => {
+    try {
+       await api.patch(`/jobs/${jobId}/complete`);
+       toast.success("Job completed successfully");
+
+      navigate("/dashboard/jobs")
+    } catch (error) {
+      console.error(error);
+       toast.error("Failed to complete job");
+    }
+  }
 
   useEffect(() => {
     if (jobId) {
@@ -82,8 +95,8 @@ export default function Pipeline() {
                 : "-"
             }`}
           />
-          <Button disabled={isReviewActive} variant="contained">
-            Send Interview Email
+          <Button disabled={isReviewActive} onClick={handleComplete} variant="contained">
+            Complete
           </Button>
         </Box>
       </Box>
