@@ -1,4 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import DashboardPage from "@/Pages/Dashboard";
 import AdminLayout from "@/Layout/AdminLayout";
 import ReviewerLayout from "@/Layout/ReviewerLayout";
@@ -19,6 +20,10 @@ import Pipeline from "@/Pages/Applications/Pipeline";
 import Interview from "@/Pages/ReviewerDashboard/Interviews";
 
 export const router = createBrowserRouter([
+   {
+    path: "/",
+    element: <Navigate to="/login" />,
+  },
   {
     path: "/dashboard",
     element: (
