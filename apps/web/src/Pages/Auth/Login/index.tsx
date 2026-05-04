@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { TextField, Button, Box } from "@mui/material";
 import PasswordField from "@/Components/PasswordField";
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -31,15 +32,15 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
- useEffect(() => {
-  if (user) {
-    if (user.role === "REVIEWER") {
-      navigate("/reviewer-dashboard/application");
-    } else {
-      navigate("/dashboard");
+  useEffect(() => {
+    if (user) {
+      if (user.role === "REVIEWER") {
+        navigate("/reviewer-dashboard/application");
+      } else {
+        navigate("/dashboard");
+      }
     }
-  }
-}, [user, navigate]);
+  }, [user, navigate]);
 
   const onSubmit: SubmitHandler<Inputs> = async (payload) => {
     try {
@@ -107,6 +108,13 @@ const Login = () => {
             >
               {isSubmitting ? "Logging in..." : "Login"}
             </Button>
+
+            <Box className="text-center text-sm">
+              Don’t have an account?{" "}
+              <RouterLink to="/signup" style={{ color: "#1976d2", fontWeight: 500 }}>
+                Sign up
+              </RouterLink>
+            </Box>
           </form>
         </Box>
       </Box>
