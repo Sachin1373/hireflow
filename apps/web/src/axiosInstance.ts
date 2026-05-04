@@ -2,8 +2,9 @@ import axios from "axios";
 import { store } from "@/redux/store";
 import { logout, setAccessToken } from "@/redux/features/auth/authSlice";
 
+
 const api = axios.create({
-  baseURL: "http://localhost:3001/api",
+  baseURL: "https://hireflow-mcs0.onrender.com/api",
   timeout: 10000,
   withCredentials: true,
 });
@@ -36,7 +37,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          "http://localhost:3001/api/auth/refresh",
+          "https://hireflow-mcs0.onrender.com/api/auth/refresh",
           {},
           { withCredentials: true }
         );
