@@ -1,3 +1,0 @@
-ALTER TABLE jobs
-ALTER COLUMN form_expires_at TYPE TIMESTAMPTZ
-USING form_expires_at AT TIME ZONE 'UTC';
