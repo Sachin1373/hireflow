@@ -4,12 +4,12 @@ import dotenv from 'dotenv'
 import 'express-async-errors'
 import cookieParser from "cookie-parser";
 import path from "path";
-import authRoutes from '../src/routes/auth.route';
-import reviewersRoute from "../src/routes/reviewer.route"
-import userRoutes from "../src/routes/users.route"
-import JobRoutes from "../src/routes/jobs.route"
-import publicRoutes from "../src/routes/public.route";
-import ApplicationRoutes from "../src/routes/applications.route";
+import authRoutes from './routes/auth.route';
+import reviewersRoute from "./routes/reviewer.route"
+import userRoutes from "./routes/users.route"
+import JobRoutes from "./routes/jobs.route"
+import publicRoutes from "./routes/public.route";
+import ApplicationRoutes from "./routes/applications.route";
 dotenv.config()
 
 const app = express()
