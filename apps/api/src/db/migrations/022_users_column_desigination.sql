@@ -1,0 +1,3 @@
+ALTER TABLE users
+ADD COLUMN designation VARCHAR(255),
+ADD COLUMN assignment_processed BOOLEAN DEFAULT FALSE;
