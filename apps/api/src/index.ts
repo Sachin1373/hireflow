@@ -20,12 +20,6 @@ app.use(express.json())
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-console.log("cwd:", process.cwd());
-console.log(
-  "uploads path:",
-  path.join(process.cwd(), "uploads")
-);
-
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
 
