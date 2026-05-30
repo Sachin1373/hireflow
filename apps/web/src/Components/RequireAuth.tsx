@@ -23,7 +23,7 @@ export default function RequireAuth({ allowedRoles, children }: Props) {
         />
       );
     }
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard/jobs" replace />;
   }
 
   return <>{children}</>;

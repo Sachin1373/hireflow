@@ -37,7 +37,7 @@ const Login = () => {
       if (user.role === "REVIEWER") {
         navigate("/reviewer-dashboard/application");
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard/jobs");
       }
     }
   }, [user, navigate]);
