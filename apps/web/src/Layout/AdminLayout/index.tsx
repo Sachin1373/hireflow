@@ -4,7 +4,7 @@ import Sidebar from "@/Components/Sidebar";
 
 export default function AdminLayout() {
   const adminNavItems = [
-  { label: "Dashboard", path: "/dashboard" },
+  // { label: "Dashboard", path: "/dashboard" },
   { label: "Jobs", path: "/dashboard/jobs" },
   { label: "Applications", path: "/dashboard/applications"},
   { label: "Reviewers", path: "/dashboard/reviewers" },
